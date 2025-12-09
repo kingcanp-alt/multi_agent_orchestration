@@ -84,6 +84,7 @@ Paper-Analyzer mit drei Orchestrierungs-Varianten:
 
 ## DSPy
 - Aktivierbar über Sidebar-Checkbox "DSPy optimieren" (Teleprompting), nutzt `eval/dev.jsonl` als Dev-Set.
+- **Hinweis:** Das Demo-Dev-Set enthält nur 2 kleine Beispiele. Für echte Optimierung sollte ein größeres, thematisch passendes Dev-Set verwendet werden.
 - Falls `dspy-ai` oder `litellm` fehlen, führt die App einen Stub aus und warnt im UI.
 
 ---

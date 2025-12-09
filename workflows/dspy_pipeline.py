@@ -78,111 +78,111 @@ else:
 
     # ---------------- Signatures ----------------
     class ReadNotes(dspy.Signature):
-        """Return structured scientific notes from TEXT as per schema."""
-        TEXT: str = dspy.InputField()
-        NOTES: str = dspy.OutputField(desc="Structured notes per schema")
+        """Extract structured scientific notes from TEXT. Work ONLY with the provided TEXT.
+        If an item is not explicitly stated, write 'not reported'. Do NOT invent facts.
+        Do NOT include author names, emails, or affiliations.
+        Return structured notes following this schema:
+        Title: <paper title or 'not reported'>
+        Objective: <1-2 sentences or 'not reported'>
+        Methods:
+        - <technique/model>
+        - <dataset or setup>
+        - <tools/frameworks>
+        Results:
+        - <metric: value>
+        - <comparison>
+        Limitations: <text or 'not reported'>
+        Takeaways:
+        - <bullet>
+        - <bullet>
+        - <bullet>
+        If tables or metrics are present, extract numeric values. If no numbers exist, write 'not reported'.
+        NEVER guess or interpolate metrics."""
+        TEXT: str = dspy.InputField(desc="The scientific paper text to extract notes from")
+        NOTES: str = dspy.OutputField(desc="Structured scientific notes following the schema above, no JSON, no extra prose")
 
     class Summarize(dspy.Signature):
-        """Grounded 200-300 word summary from NOTES with takeaways."""
-        NOTES: str = dspy.InputField()
-        SUMMARY: str = dspy.OutputField()
+        """Produce a concise scientific summary (200-300 words) from NOTES.
+        Cover in this order: Objective -> Method (what/how) -> Results (numbers if present; otherwise say 'not reported')
+        -> Limitations -> 3-5 Practical Takeaways (bulleted).
+        Avoid speculation or citations. Do NOT invent metrics; if NOTES have no numbers, write 'not reported'."""
+        NOTES: str = dspy.InputField(desc="Structured scientific notes")
+        SUMMARY: str = dspy.OutputField(desc="200-300 word summary covering objective, method, results, limitations, and takeaways")
 
     class Critique(dspy.Signature):
-        """Critique SUMMARY vs NOTES with rubric and short fixes."""
-        NOTES: str = dspy.InputField()
-        SUMMARY: str = dspy.InputField()
-        CRITIC: str = dspy.OutputField()
+        """Critique SUMMARY against NOTES. Judge for coherence, groundedness, coverage, and specificity.
+        Return a rubric with scores 0-5 for each dimension, followed by improvement suggestions.
+        Format:
+        Coherence: <0-5>
+        Groundedness: <0-5>
+        Coverage: <0-5>
+        Specificity: <0-5>
+        Improvements:
+        - <short fix #1>
+        - <short fix #2>
+        - <optional fix #3>"""
+        NOTES: str = dspy.InputField(desc="Original structured notes (ground truth)")
+        SUMMARY: str = dspy.InputField(desc="Summary to be critiqued")
+        CRITIC: str = dspy.OutputField(desc="Critique with rubric scores and improvement suggestions")
 
     class Integrate(dspy.Signature):
-        """Executive meta-summary fusing SUMMARY + CRITIC grounded in NOTES."""
-        NOTES: str = dspy.InputField()
-        SUMMARY: str = dspy.InputField()
-        CRITIC: str = dspy.InputField()
-        META: str = dspy.OutputField()
+        """Create an executive meta-summary by fusing SUMMARY with CRITIC feedback, grounded strictly in NOTES.
+        Do not invent metrics or citations. Provide a concise meta-summary covering:
+        Objective (one sentence), Method (one sentence), Results (one sentence), Limitations (one sentence),
+        Takeaways (3 bullets), Open Questions (2 questions), and Confidence level (High/Medium/Low).
+        Confidence: High if all rubric scores ≥4; Medium if any score is 3; Low if any score ≤2."""
+        NOTES: str = dspy.InputField(desc="Original structured notes (ground truth)")
+        SUMMARY: str = dspy.InputField(desc="Summary to integrate")
+        CRITIC: str = dspy.InputField(desc="Critique feedback with rubric scores")
+        META: str = dspy.OutputField(desc="Executive meta-summary with objective, method, results, limitations, takeaways, open questions, and confidence")
 
-    # ---------------- Module (strikte Templates, keine JSON) ----------------
+    # ---------------- Module (deklarativ - DSPy generiert Prompts aus Signatures) ----------------
     class ReaderM(dspy.Module):
+        """Reader module that extracts structured notes from text using declarative signatures."""
         def __init__(self):
             super().__init__()
             self.gen = dspy.Predict(ReadNotes)
 
         def forward(self, text: str):
-            schema = (
-                "Title: <text or 'not reported'>\n"
-                "Objective: <1-2 sentences or 'not reported'>\n"
-                "Methods:\n- <method>\n- <dataset or setup>\n- <tools/frameworks>\n"
-                "Results:\n- <metric: value>\n- <comparison>\n"
-                "Limitations: <text or 'not reported'>\n"
-                "Takeaways:\n- <bullet>\n- <bullet>\n- <bullet>\n"
-            )
-            prompt = (
-                "ONLY return the filled template below. "
-                "No JSON, no extra prose, no author names or citations.\n\n"
-                f"{schema}\n\nTEXT:\n{text}\n\nReturn ONLY the template, nothing else."
-            )
-            out = self.gen(TEXT=prompt)
+            # Deklarativ: Direkt die Signature nutzen, DSPy generiert den Prompt automatisch
+            out = self.gen(TEXT=text)
             return dspy.Prediction(NOTES=_sanitize(out.NOTES))
 
     class SummarizerM(dspy.Module):
+        """Summarizer module that creates summaries from notes using declarative signatures."""
         def __init__(self):
             super().__init__()
             self.gen = dspy.Predict(Summarize)
 
-        def forward(self, notes: str):
-            tpl = (
-                "Objective: <1-2 sentences>\n"
-                "Method: <2-4 sentences>\n"
-                "Results: <numbers if present; else 'not reported'>\n"
-                "Limitations: <short>\n"
-                "Takeaways:\n- <bullet>\n- <bullet>\n- <bullet>\n"
-            )
-            prompt = (
-                "Write a grounded 200-300 word summary from NOTES. "
-                "Use the following template, no JSON, no citations. "
-                "Return ONLY the filled template.\n\n"
-                f"TEMPLATE:\n{tpl}\n\nNOTES:\n{notes}"
-            )
-            out = self.gen(NOTES=prompt)
+        def forward(self, notes: str = None, NOTES: str = None):
+            # Deklarativ: Direkt die Signature nutzen, DSPy generiert den Prompt automatisch
+            # Unterstützt sowohl 'notes' als auch 'NOTES' für Kompatibilität mit DSPy Teleprompting
+            input_notes = NOTES if NOTES is not None else notes
+            if input_notes is None:
+                raise ValueError("Either 'notes' or 'NOTES' must be provided")
+            out = self.gen(NOTES=input_notes)
             return dspy.Prediction(SUMMARY=_sanitize(out.SUMMARY))
 
     class CriticM(dspy.Module):
+        """Critic module that critiques summaries using declarative signatures."""
         def __init__(self):
             super().__init__()
             self.gen = dspy.Predict(Critique)
 
         def forward(self, notes: str, summary: str):
-            rubric = (
-                "Coherence: <0-5>\nGroundedness: <0-5>\nCoverage: <0-5>\nSpecificity: <0-5>\n"
-                "Improvements:\n- <≤1 sentence>\n- <≤1 sentence>\n- <optional>\n"
-            )
-            prompt = (
-                "Score SUMMARY vs NOTES. Return ONLY this rubric (no JSON):\n"
-                f"{rubric}\n\nNOTES:\n{notes}\n\nSUMMARY:\n{summary}"
-            )
-            out = self.gen(NOTES=notes, SUMMARY=prompt)
+            # Deklarativ: Direkt die Signature nutzen, DSPy generiert den Prompt automatisch
+            out = self.gen(NOTES=notes, SUMMARY=summary)
             return dspy.Prediction(CRITIC=_sanitize(out.CRITIC))
 
     class IntegratorM(dspy.Module):
+        """Integrator module that creates meta-summaries using declarative signatures."""
         def __init__(self):
             super().__init__()
             self.gen = dspy.Predict(Integrate)
 
         def forward(self, notes: str, summary: str, critic: str):
-            tpl = (
-                "**Objective:** <one sentence>\n"
-                "**Method:** <one sentence>\n"
-                "**Results:** <one sentence>\n"
-                "**Limitations:** <one sentence>\n"
-                "**Takeaways:**\n- <bullet>\n- <bullet>\n- <bullet>\n"
-                "Open Questions:\n- <q1>\n- <q2>\n"
-                "Confidence: <High|Medium|Low>\n"
-            )
-            prompt = (
-                "Fuse SUMMARY + CRITIC, grounded strictly in NOTES. "
-                "Return ONLY the following template (no JSON):\n"
-                f"{tpl}\n\nNOTES:\n{notes}\n\nSUMMARY:\n{summary}\n\nCRITIC:\n{critic}"
-            )
-            out = self.gen(NOTES=notes, SUMMARY=summary, CRITIC=prompt)
+            # Deklarativ: Direkt die Signature nutzen, DSPy generiert den Prompt automatisch
+            out = self.gen(NOTES=notes, SUMMARY=summary, CRITIC=critic)
             return dspy.Prediction(META=_sanitize(out.META))
 
     # ---------------- Pipeline (optional Teleprompting) ----------------
@@ -198,7 +198,8 @@ else:
             t0 = perf_counter()
             notes = self.reader(input_text).NOTES
             t1 = perf_counter()
-            summary = self.summarizer(notes).SUMMARY
+            # Verwende NOTES= für Kompatibilität mit Teleprompting
+            summary = self.summarizer(NOTES=notes).SUMMARY
             t2 = perf_counter()
             critic = self.critic(notes, summary).CRITIC
             t3 = perf_counter()
@@ -254,18 +255,37 @@ else:
         if not dev:
             return  # nichts zu tun
 
+        # Metrik-Funktion: pred ist ein Prediction-Objekt mit .SUMMARY Attribut
+        def _metric(gold, pred, trace=None):
+            # Extrahiere SUMMARY aus Prediction-Objekt
+            pred_text = ""
+            if hasattr(pred, "SUMMARY"):
+                pred_text = str(pred.SUMMARY)
+            elif isinstance(pred, dict):
+                pred_text = str(pred.get("SUMMARY", ""))
+            else:
+                pred_text = str(pred)
+            gold_text = str(gold) if gold else ""
+            return _word_f1(pred_text, gold_text)
+
         # sehr kleine BootstrapFewShot-Optimierung
         tp = dspy.teleprompt.BootstrapFewShot(
-            metric=lambda gold, pred: _word_f1(pred or "", gold or ""),
+            metric=_metric,
             max_bootstrapped_demos=3,
             max_labeled_demos=3,
         )
 
         # Wir optimieren hier nur die Summarizer-Stage (als Beispiel)
-        tp.compile(pipeline.summarizer, trainset=[
-            {"NOTES": pipeline.reader(text).NOTES, "SUMMARY": gold}
-            for (text, gold) in dev
-        ])
+        # Trainset: Liste von dspy.Example oder Dict mit NOTES und SUMMARY
+        trainset = []
+        for (text, gold) in dev:
+            notes = pipeline.reader(text).NOTES
+            trainset.append(dspy.Example(NOTES=notes, SUMMARY=gold).with_inputs("NOTES"))
+        
+        if trainset:
+            # compile() gibt eine optimierte Version zurück - diese muss verwendet werden!
+            optimized_summarizer = tp.compile(pipeline.summarizer, trainset=trainset)
+            pipeline.summarizer = optimized_summarizer
 
     # ---------------- Public API ----------------
     def run_pipeline(input_text: str, cfg: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

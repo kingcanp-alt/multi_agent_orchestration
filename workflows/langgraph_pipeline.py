@@ -15,7 +15,7 @@ from agents.reader import run as run_reader
 from agents.summarizer import run as run_summarizer
 from agents.critic import run as run_critic
 from agents.integrator import run as run_integrator
-from llm import configure
+from llm import configure, llm
 from telemetry import log_row
 from utils import build_analysis_context, truncate_text
 from langchain_core.prompts import ChatPromptTemplate
@@ -161,9 +161,11 @@ def _execute_integrator_node(state: PipelineState) -> PipelineState:
     return state
 
 
-def _generate_graph_visualization_dot() -> str:
-    """Generiert Graphviz DOT-Darstellung des Workflows."""
-    return r"""
+def _generate_graph_visualization_dot(state: Optional[PipelineState] = None) -> str:
+    """Generiert Graphviz DOT-Darstellung des Workflows mit optionalen dynamischen Werten."""
+    # Statische Labels
+    if state is None:
+        return r"""
 digraph G {
   rankdir=LR;
   node [shape=box, style="rounded,filled", color="#9ca3af", fillcolor="#f9fafb", fontname="Inter"];
@@ -172,14 +174,50 @@ digraph G {
   retriever  [label="Retriever/Preprocess - Analysis Context"];
   reader     [label="Reader - Notes"];
   summarizer [label="Summarizer - Summary"];
-  critic     [label="Critic - Review"];
+  critic_node [label="Critic - Review"];
   quality    [label="Quality (F1)"];
   judge      [label="LLM Judge (0-5)"];
   integrator [label="Integrator - Meta Summary"];
   output     [label="Output (notes, summary, critic, meta, f1, judge)"];
 
-  input -> retriever -> reader -> summarizer -> critic -> quality -> judge -> integrator -> output;
+  input -> retriever -> reader -> summarizer -> critic_node -> quality -> judge -> integrator -> output;
 }
+""".strip()
+    
+    # Dynamische Labels mit tatsächlichen Werten
+    reader_time = state.get("reader_s", 0.0)
+    summarizer_time = state.get("summarizer_s", 0.0)
+    critic_time = state.get("critic_s", 0.0)
+    integrator_time = state.get("integrator_s", 0.0)
+    f1_score = state.get("quality_f1", 0.0)
+    judge_score = state.get("judge_score", 0.0)
+    
+    # Formatierung für Labels
+    reader_label = f"Reader - Notes\\n{reader_time:.2f}s"
+    summarizer_label = f"Summarizer - Summary\\n{summarizer_time:.2f}s"
+    critic_label = f"Critic - Review\\n{critic_time:.2f}s"
+    quality_label = f"Quality (F1)\\n{f1_score:.3f}"
+    judge_label = f"LLM Judge\\n{judge_score:.1f}/5"
+    integrator_label = f"Integrator - Meta Summary\\n{integrator_time:.2f}s"
+    
+    return f"""
+digraph G {{
+  rankdir=LR;
+  node [shape=box, style="rounded,filled", color="#667eea", fillcolor="#f0f4ff", fontname="Inter"];
+  edge [color="#9ca3af"];
+
+  input      [label="Input\\n(raw text/PDF)", fillcolor="#e0e7ff", color="#667eea"];
+  retriever  [label="Retriever/Preprocess\\nAnalysis Context", fillcolor="#f0f4ff"];
+  reader     [label="{reader_label}", fillcolor="#dbeafe"];
+  summarizer [label="{summarizer_label}", fillcolor="#dbeafe"];
+  critic_node [label="{critic_label}", fillcolor="#dbeafe"];
+  quality    [label="{quality_label}", fillcolor="#d1fae5"];
+  judge      [label="{judge_label}", fillcolor="#d1fae5"];
+  integrator [label="{integrator_label}", fillcolor="#dbeafe"];
+  output     [label="Output\\n(all results)", fillcolor="#e0e7ff", color="#667eea"];
+
+  input -> retriever -> reader -> summarizer -> critic_node -> quality -> judge -> integrator -> output;
+}}
 """.strip()
 
 
@@ -189,15 +227,15 @@ def _build_langgraph_workflow() -> Any:
     graph.add_node("retriever", _execute_retriever_node)
     graph.add_node("reader", _execute_reader_node)
     graph.add_node("summarizer", _execute_summarizer_node)
-    graph.add_node("critic", _execute_critic_node)
+    graph.add_node("critic_node", _execute_critic_node)  # Umbenannt: Node-Name != State-Key
     graph.add_node("quality", _execute_quality_node)
     graph.add_node("judge", _execute_judge_node)
     graph.add_node("integrator", _execute_integrator_node)
     graph.set_entry_point("retriever")
     graph.add_edge("retriever", "reader")
     graph.add_edge("reader", "summarizer")
-    graph.add_edge("summarizer", "critic")
-    graph.add_edge("critic", "quality")
+    graph.add_edge("summarizer", "critic_node")  # Edge angepasst
+    graph.add_edge("critic_node", "quality")  # Edge angepasst
     graph.add_edge("quality", "judge")
     graph.add_edge("judge", "integrator")
     graph.add_edge("integrator", END)
@@ -260,5 +298,5 @@ def run_pipeline(input_text: str, config: Optional[Dict[str, Any]] = None) -> Di
         "judge_score": final_state.get("judge_score", 0.0),
         "latency_s": total_duration,
         "input_chars": input_chars,
-        "graph_dot": _generate_graph_visualization_dot(),
+        "graph_dot": _generate_graph_visualization_dot(final_state),  # Dynamisch mit Werten
     }
