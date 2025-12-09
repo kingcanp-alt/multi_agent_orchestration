@@ -83,7 +83,7 @@ else:
         NOTES: str = dspy.OutputField(desc="Structured notes per schema")
 
     class Summarize(dspy.Signature):
-        """Grounded 200–300 word summary from NOTES with takeaways."""
+        """Grounded 200-300 word summary from NOTES with takeaways."""
         NOTES: str = dspy.InputField()
         SUMMARY: str = dspy.OutputField()
 
@@ -109,7 +109,7 @@ else:
         def forward(self, text: str):
             schema = (
                 "Title: <text or 'not reported'>\n"
-                "Objective: <1–2 sentences or 'not reported'>\n"
+                "Objective: <1-2 sentences or 'not reported'>\n"
                 "Methods:\n- <method>\n- <dataset or setup>\n- <tools/frameworks>\n"
                 "Results:\n- <metric: value>\n- <comparison>\n"
                 "Limitations: <text or 'not reported'>\n"
@@ -130,14 +130,14 @@ else:
 
         def forward(self, notes: str):
             tpl = (
-                "Objective: <1–2 sentences>\n"
-                "Method: <2–4 sentences>\n"
+                "Objective: <1-2 sentences>\n"
+                "Method: <2-4 sentences>\n"
                 "Results: <numbers if present; else 'not reported'>\n"
                 "Limitations: <short>\n"
                 "Takeaways:\n- <bullet>\n- <bullet>\n- <bullet>\n"
             )
             prompt = (
-                "Write a grounded 200–300 word summary from NOTES. "
+                "Write a grounded 200-300 word summary from NOTES. "
                 "Use the following template, no JSON, no citations. "
                 "Return ONLY the filled template.\n\n"
                 f"TEMPLATE:\n{tpl}\n\nNOTES:\n{notes}"

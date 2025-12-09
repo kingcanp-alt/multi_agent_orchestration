@@ -7,6 +7,7 @@ __pycache__/
 .venv/
 venv/
 .env
+# .env.example sollte NICHT ignoriert werden (ist Template)
 
 # App Artefakte
 telemetry.csv
