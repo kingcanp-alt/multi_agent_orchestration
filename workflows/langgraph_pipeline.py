@@ -169,13 +169,13 @@ digraph G {
   node [shape=box, style="rounded,filled", color="#9ca3af", fillcolor="#f9fafb", fontname="Inter"];
 
   input      [label="Input (raw text/PDF extract)"];
-  retriever  [label="Retriever/Preprocess → Analysis Context"];
-  reader     [label="Reader → Notes"];
-  summarizer [label="Summarizer → Summary"];
-  critic     [label="Critic → Review"];
+  retriever  [label="Retriever/Preprocess - Analysis Context"];
+  reader     [label="Reader - Notes"];
+  summarizer [label="Summarizer - Summary"];
+  critic     [label="Critic - Review"];
   quality    [label="Quality (F1)"];
   judge      [label="LLM Judge (0-5)"];
-  integrator [label="Integrator → Meta Summary"];
+  integrator [label="Integrator - Meta Summary"];
   output     [label="Output (notes, summary, critic, meta, f1, judge)"];
 
   input -> retriever -> reader -> summarizer -> critic -> quality -> judge -> integrator -> output;

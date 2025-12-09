@@ -30,16 +30,16 @@ with st.expander("Hilfe"):
 **Was macht diese App?**  
 Lädt Paper (PDF/TXT), erstellt einen abschnittsbasierten Analyse-Kontext und führt drei Orchestrierungs-Varianten aus:
 
-- **LangChain (sequenziell):** Lineare Pipeline (Reader → Summarizer → Critic → Integrator). Einfach & schnell, wenig Boilerplate.
+- **LangChain (sequenziell):** Lineare Pipeline (Reader - Summarizer - Critic - Integrator). Einfach & schnell, wenig Boilerplate.
 - **LangGraph (Graph):** Expliziter Graph mit Knoten/Kanten, deterministischer Kontrollfluss, sehr transparent (Graph-Ansicht).
-- **DSPy (deklarativ):** Pipelines per „Signatures/Modules" definieren; optionales *Teleprompting* optimiert Prompts mit kleinem Dev-Set.
+- **DSPy (deklarativ):** Pipelines per "Signatures/Modules" definieren; optionales *Teleprompting* optimiert Prompts mit kleinem Dev-Set.
 
 **Kontextfenster (LLM):**  
 Große Dokumente passen evtl. nicht vollständig in das Modell-Kontextfenster. Das **Analyse-Budget** begrenzt deshalb den Input.  
 Tipp: Passe bei Bedarf `Max Tokens` und `Max Eingabe (Zeichen)` an.
 
 **Telemetry (CSV):**  
-Schreibt u. a. `engine`, `input_chars`, `summary_len`, `meta_len`, `latency_s` sowie Schrittzeiten (`reader_s`, …) in `telemetry.csv`.
+Schreibt u. a. `engine`, `input_chars`, `summary_len`, `meta_len`, `latency_s` sowie Schrittzeiten (`reader_s`, etc.) in `telemetry.csv`.
 
 **DSPy-Teleprompting:**  
 Mit Dev-Set (JSONL) kann die Summarizer-Stage leichtgewichtig optimiert werden (Few-Shot-Bootstrapping). Erst Dev-Set wählen, dann Häkchen setzen.

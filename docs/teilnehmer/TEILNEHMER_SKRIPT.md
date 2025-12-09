@@ -51,7 +51,7 @@ Am Ende des Workshops könnt ihr:
 
 Falls ihr keinen Code-Zugriff habt, nutzt die App ohne Code-Änderungen. Die Aufgaben mit Code sind optional, aber empfehlenswert, um die Unterschiede wirklich zu verstehen.
 
-**Tipp:** Falls ihr Hilfe beim Code-Ändern braucht, schaut in `CODE_EXPERIMENTE.md` - dort sind alle Code-Snippets zum Kopieren vorbereitet.
+**Tipp:** Falls ihr Hilfe beim Code-Ändern braucht, schaut in `CODE_EXPERIMENTE.md` (im selben Ordner) - dort sind alle Code-Snippets zum Kopieren vorbereitet.
 
 Ladet ein Testdokument hoch (2-3 Seiten PDF oder TXT).
 
@@ -199,7 +199,7 @@ Das sagt dem LLM, dass es auch einen Clarity-Score ausgeben soll.
 **Schritt 1: Aktuelle Reihenfolge verstehen**
 Öffnet `workflows/langchain_pipeline.py`. Findet die Zeilen 33-52, wo die Agenten aufgerufen werden.
 
-Aktuell ist die Reihenfolge: Reader → Summarizer → Critic → Integrator
+Aktuell ist die Reihenfolge: Reader - Summarizer - Critic - Integrator
 
 **Warum diese Reihenfolge?**
 - Reader braucht nur das Dokument
@@ -243,7 +243,7 @@ Führt die Pipeline aus. Was passiert?
 **Schritt 1: Pipeline ausführen**
 Führt die LangGraph-Pipeline in der App aus. Wählt "LangGraph" als Pipeline, klickt auf "Starten".
 
-**Was passiert?** Die Pipeline läuft, und ihr seht die Graph-Visualisierung. Das ist ein Diagramm, das zeigt: Input → Retriever → Reader → Summarizer → Critic → Quality → Judge → Integrator → Output.
+**Was passiert?** Die Pipeline läuft, und ihr seht die Graph-Visualisierung. Das ist ein Diagramm, das zeigt: Input - Retriever - Reader - Summarizer - Critic - Quality - Judge - Integrator - Output.
 
 **Schritt 2: Code verstehen**
 Öffnet `workflows/langgraph_pipeline.py`. Schaut euch die Funktion `_build_langgraph_workflow` an (Zeilen 186-204).
@@ -322,7 +322,7 @@ graph.add_edge("summarizer", "translator")
 graph.add_edge("translator", "critic")
 ```
 
-**Was bedeutet das?** Jetzt ist der Graph: Summarizer → Translator → Critic. Die Edges bestimmen die Reihenfolge. Der Graph weiß jetzt: Nach dem Summarizer kommt der Translator, nach dem Translator kommt der Critic.
+**Was bedeutet das?** Jetzt ist der Graph: Summarizer - Translator - Critic. Die Edges bestimmen die Reihenfolge. Der Graph weiß jetzt: Nach dem Summarizer kommt der Translator, nach dem Translator kommt der Critic.
 
 **Schritt 4: State erweitern**
 Fügt das neue Feld zum PipelineState hinzu (Zeile 24-39):
@@ -617,9 +617,9 @@ Wählt eine der folgenden Aufgaben:
 
 **Führt das Experiment durch:**
 1. Ändert den Prompt in `agents/summarizer.py`
-2. Führt LangChain aus → Summary sollte kürzer sein
-3. Führt LangGraph aus → Summary sollte kürzer sein
-4. Führt DSPy aus → Summary bleibt bei der ursprünglichen Länge (oder ändert sich nur, wenn die Signature auch geändert wurde)
+2. Führt LangChain aus - Summary sollte kürzer sein
+3. Führt LangGraph aus - Summary sollte kürzer sein
+4. Führt DSPy aus - Summary bleibt bei der ursprünglichen Länge (oder ändert sich nur, wenn die Signature auch geändert wurde)
 
 **Beobachtung:** Sehen LangChain und LangGraph die Änderung? Ja, beide nutzen denselben Agent-Code. Sieht DSPy die Änderung? Nein, DSPy generiert seinen eigenen Prompt basierend auf der Signature.
 

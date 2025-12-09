@@ -161,7 +161,7 @@ def split_sections(text: str) -> Dict[str, str]:
 
 
 def _normalize_section_name(detected_name: str) -> str:
-    """Normalisiert Abschnittsnamen (z.B. 'conclusions' → 'conclusion', 'methodology' → 'methods')."""
+    """Normalisiert Abschnittsnamen (z.B. 'conclusions' zu 'conclusion', 'methodology' zu 'methods')."""
     detected_lower = detected_name.lower()
     
     if "conclusion" in detected_lower:

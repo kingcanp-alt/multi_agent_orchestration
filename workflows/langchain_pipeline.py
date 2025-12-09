@@ -16,7 +16,7 @@ from utils import build_analysis_context
 
 def run_pipeline(input_text: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    Führt LangChain-Pipeline sequenziell aus: Reader → Summarizer → Critic → Integrator.
+    Führt LangChain-Pipeline sequenziell aus: Reader - Summarizer - Critic - Integrator.
     
     Gibt Dictionary zurück mit: structured, summary, critic, meta, Timing-Infos und Gesamt-Latenz.
     """

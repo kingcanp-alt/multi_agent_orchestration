@@ -2,7 +2,9 @@
 
 ## Willkommen zum Workshop!
 
-Einfachste Methode: Doppelklick auf `run.bat` (Windows) oder `run.sh` (Mac/Linux).
+Ihr seid im Ordner `docs/teilnehmer/`. Für den Start müsst ihr ins Projekt-Root.
+
+Einfachste Methode: Im Projekt-Root Doppelklick auf `run.bat` (Windows) oder `run.sh` (Mac/Linux).
 
 ---
 
@@ -87,8 +89,9 @@ Wo bekomme ich einen API-Key?
 
 ## Weiterführende Informationen
 
-- Workshop-Skript: `TEILNEHMER_SKRIPT.md` - Alle Aufgaben und Experimente
-- Code-Experimente: `CODE_EXPERIMENTE.md` - Code-Snippets zum Kopieren
+- Workshop-Skript: `TEILNEHMER_SKRIPT.md` (im selben Ordner) - Alle Aufgaben und Experimente
+- Code-Experimente: `CODE_EXPERIMENTE.md` (im selben Ordner) - Code-Snippets zum Kopieren
+- Projekt-Übersicht: `README.md` (im Projekt-Root)
 
 ---
 
@@ -107,7 +110,7 @@ Viel Erfolg beim Workshop.
 
 Falls der Doppelklick-Start nicht funktioniert, könnt ihr auch manuell starten:
 
-1. Terminal öffnen im Projektordner
+1. Terminal öffnen im Projekt-Root (nicht in `docs/teilnehmer/`)
 2. Setup:
    ```bash
    # Windows:

@@ -30,7 +30,7 @@ def configure(config: Optional[dict] = None) -> None:
     """
     Konfiguriert globale LLM-Instanz (OpenAI).
     
-    Parameter-Quelle (Priorität): config → Umgebungsvariablen → Fallback.
+    Parameter-Quelle (Priorität): config - Umgebungsvariablen - Fallback.
     Erwartet `OPENAI_API_KEY` in der Umgebung.
     """
     global _llm_instance

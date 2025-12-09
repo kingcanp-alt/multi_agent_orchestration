@@ -11,6 +11,7 @@ venv/
 
 # App Artefakte
 telemetry.csv
+telemetry.bak
 
 # OS
 .DS_Store
