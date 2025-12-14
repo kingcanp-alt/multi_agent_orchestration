@@ -8,23 +8,23 @@ from langchain_core.prompts import ChatPromptTemplate
 from llm import llm
 
 CRITIC_PROMPT = ChatPromptTemplate.from_template(
-    "You are a rigorous scientific reviewer. Judge the SUMMARY only against the NOTES (the ground truth). "
-    "Penalize any claim, number, dataset, metric, or conclusion not supported by NOTES.\n\n"
-    "Critical checks (must apply):\n"
-    "1) Title fidelity: If NOTES Title is not 'not reported', SUMMARY must include the exact same title verbatim (not paraphrased, not shortened). If SUMMARY says 'not reported' for title or uses a different title, treat as a clear error.\n"
-    "2) Quantitative results presence: If NOTES Results contains quantitative metrics/outcomes (i.e., any explicit numeric result statements), SUMMARY must include at least one (preferably two) of those numeric outcomes with context. If missing, lower Specificity and state exactly what numbers to add.\n"
-    "3) No fabricated numbers: If SUMMARY includes any numbers not present in NOTES Results (e.g., years, section numbers, made-up scores), lower Groundedness and call out the offending numbers.\n"
-    "4) If NOTES explicitly say 'No quantitative metrics reported in provided text.', SUMMARY must NOT contain any performance numbers; Results should use that exact sentence.\n\n"
-    "RUBRIC (0-5 integers):\n"
-    "- Coherence: logical flow, no contradictions.\n"
-    "- Groundedness: claims are supported by NOTES.\n"
-    "- Coverage: objective, method, results, limitations are covered.\n"
-    "- Specificity: salient details included when NOTES provide them (especially metrics if present; if metrics are missing in SUMMARY but exist in NOTES, lower the score sharply; if NOTES have no metrics, do not reward high specificity).\n\n"
-    "OUTPUT FORMAT (exactly, no extra text):\n"
-    "Coherence: <0-5>\n"
-    "Groundedness: <0-5>\n"
+    "You are a careful scientific reviewer. Judge SUMMARY against NOTES. "
+    "Mark as wrong any claim not supported by NOTES. Mark as wrong any number not supported by NOTES. Mark as wrong any dataset not supported by NOTES. Mark as wrong any metric not supported by NOTES. Mark as wrong any conclusion not supported by NOTES.\n\n"
+    "STRICT RULES:\n\n"
+    "1) Title: Check if NOTES Title is 'not reported'. If it is not 'not reported', SUMMARY must include exact same title. If title is different, treat as error.\n"
+    "2) Quantitative results: Check if NOTES Results contains metrics. If it does, SUMMARY should include numeric outcomes from NOTES. If NOTES has no metrics, SUMMARY must not contain performance numbers. If missing expected numbers, lower Details score. State what numbers to add. Quote the exact part of NOTES that supports or contradicts.\n"
+    "3) No made-up numbers: Check if SUMMARY includes numbers not in NOTES Results. Examples: years, section numbers, invented scores. If found, lower Accuracy score. Quote the exact missing or contradicting part of NOTES, or state 'not found in NOTES'.\n"
+    "4) If NOTES says 'No quantitative metrics reported in provided text.', SUMMARY must not contain performance numbers. Results should use that exact sentence.\n\n"
+    "SCORING (0-5 integers):\n"
+    "- Makes sense: logical flow, no contradictions.\n"
+    "- Accuracy: claims supported by NOTES.\n"
+    "- Coverage: objective covered, method covered, results covered, limitations covered.\n"
+    "- Details: important details included. If metrics missing in SUMMARY but exist in NOTES, lower score sharply. If NOTES have no metrics, do not reward high details score.\n\n"
+    "OUTPUT FORMAT:\n"
+    "Makes sense: <0-5>\n"
+    "Accuracy: <0-5>\n"
     "Coverage: <0-5>\n"
-    "Specificity: <0-5>\n"
+    "Details: <0-5>\n"
     "Improvements:\n"
     "- <short fix #1>\n"
     "- <short fix #2>\n"
@@ -43,7 +43,7 @@ def run(notes: str = "", summary: str = "", *args, **kwargs) -> Dict[str, Any]:
     # Keep backward compatibility
     if args and not kwargs:
         notes_text = args[0]
-        summary_text = args[0]
+        summary_text = args[1] if len(args) > 1 else ""
     else:
         notes_text = kwargs.get("notes", notes) or ""
         summary_text = kwargs.get("summary", summary) or ""

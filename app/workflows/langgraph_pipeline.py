@@ -139,8 +139,8 @@ def _extract_critic_score(state: PipelineState) -> float:
     """
     Extracts score from critic text.
     
-    Critic returns text like "Coherence: 4". We find the first number.
-    If it is greater than 1.0, we assume a 0-5 scale. Then we normalize
+    Critic returns text like "Makes sense: 4" or "Accuracy: 4". We find the first number.
+    If it is greater than 1.0, we assume a 0-5 scale. Then we convert
     to 0-1 for routing.
     """
     text = state.get("critic", "") or ""

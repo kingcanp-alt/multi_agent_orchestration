@@ -113,13 +113,13 @@ else:
         SUMMARY: str = dspy.OutputField(desc="200-300 word summary covering objective, method, results, limitations, and takeaways")
 
     class Critique(dspy.Signature):
-        """Critique SUMMARY against NOTES. Judge for coherence, groundedness, coverage, and specificity.
+        """Critique SUMMARY against NOTES. Judge for makes sense, accuracy, coverage, and details.
         Return a rubric with scores 0-5 for each dimension, followed by improvement suggestions.
         Format:
-        Coherence: <0-5>
-        Groundedness: <0-5>
+        Makes sense: <0-5>
+        Accuracy: <0-5>
         Coverage: <0-5>
-        Specificity: <0-5>
+        Details: <0-5>
         Improvements:
         - <short fix #1>
         - <short fix #2>
