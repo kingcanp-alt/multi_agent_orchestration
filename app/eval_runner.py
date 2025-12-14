@@ -1,10 +1,16 @@
+"""
+Evaluation runner for comparing all pipelines.
+"""
+
+from __future__ import annotations
+
 import json, re, os, sys
 from typing import Dict
 
 from utils import build_analysis_context
+from workflows.dspy_pipeline import run_pipeline as run_dspy
 from workflows.langchain_pipeline import run_pipeline as run_lc
 from workflows.langgraph_pipeline import run_pipeline as run_lg
-from workflows.dspy_pipeline import run_pipeline as run_dspy
 
 def _tokens(s: str) -> set[str]:
     s = s.lower()
@@ -52,11 +58,6 @@ def run_example(text: str, cfg: Dict):
 if __name__ == "__main__":
     # Base config
     cfg = {
-        "truncate_chars": 4000,
-        "sections_enabled": True,
-        "section_budget_chars": 3500,
-        "min_analysis_chars": 800,
-        "auto_expand_if_short": True,
         "dspy_teleprompt": False,
     }
     dev_path = "dev-set/dev.jsonl"

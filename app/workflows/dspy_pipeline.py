@@ -1,4 +1,3 @@
-# workflows/dspy_pipeline.py
 from __future__ import annotations
 
 from typing import Dict, Any, List, Optional, Tuple
@@ -15,7 +14,6 @@ except Exception:
     def log_row(_row: dict):
         pass
 
-# Import dependencies
 try:
     import dspy
     HAVE_DSPY = True
@@ -23,7 +21,7 @@ except Exception:
     HAVE_DSPY = False
 
 try:
-    import litellm  # noqa: F401
+    import litellm
     HAVE_LITELLM = True
 except Exception:
     HAVE_LITELLM = False

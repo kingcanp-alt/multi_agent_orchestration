@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os, csv
 
 _DEFAULT_FIELDS: list[str] = [

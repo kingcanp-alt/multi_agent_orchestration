@@ -3,7 +3,9 @@ Reader Agent: Extracts notes from papers.
 """
 
 from __future__ import annotations
+
 from langchain_core.prompts import ChatPromptTemplate
+
 from llm import llm
 
 READER_PROMPT = ChatPromptTemplate.from_template(

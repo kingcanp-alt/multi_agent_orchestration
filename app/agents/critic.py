@@ -3,8 +3,11 @@ Critic Agent: Evaluates summaries against original notes.
 """
 
 from __future__ import annotations
+
 from typing import Any, Dict
+
 from langchain_core.prompts import ChatPromptTemplate
+
 from llm import llm
 
 CRITIC_PROMPT = ChatPromptTemplate.from_template(

@@ -21,17 +21,6 @@ def _normalize_text(raw_text: str) -> str:
     return normalized_text.strip()
 
 
-def truncate_text(text: str, max_characters: Optional[int]) -> str:
-    """Truncate text to max_characters."""
-    if not text or not max_characters:
-        return text or ""
-    
-    if len(text) <= max_characters:
-        return text
-    
-    return text[:max_characters]
-
-
 # Remove metadata and boilerplate
 
 _METADATA_KEYWORDS_PATTERN = r"(?:university|institute|faculty|department|school of|affiliation|corresponding author|preprint|arxiv|doi|copyright|acknowledg(e)?ments?)"

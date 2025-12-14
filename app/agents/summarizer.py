@@ -3,7 +3,9 @@ Summarizer Agent: Creates summary from notes.
 """
 
 from __future__ import annotations
+
 from langchain_core.prompts import ChatPromptTemplate
+
 from llm import llm
 
 SUMMARIZER_PROMPT = ChatPromptTemplate.from_template(

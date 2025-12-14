@@ -4,25 +4,24 @@ LangGraph Pipeline: Graph-based execution with conditional loops.
 
 from __future__ import annotations
 
-from typing import TypedDict, Dict, Any, Optional, Callable
-from time import perf_counter
-from datetime import datetime
 import concurrent.futures as cf
 import re
+from datetime import datetime
+from time import perf_counter
+from typing import Any, Callable, Dict, Optional, TypedDict
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 
-from agents.reader import run as run_reader
-from agents.summarizer import run as run_summarizer
 from agents.critic import run as run_critic
 from agents.integrator import run as run_integrator
+from agents.reader import run as run_reader
+from agents.summarizer import run as run_summarizer
 from llm import configure
 from telemetry import log_row
 from utils import (
     build_analysis_context,
-    truncate_text,
-    extract_confidence_line,
     count_numeric_results,
+    extract_confidence_line,
 )
 
 
@@ -87,9 +86,7 @@ def _execute_retriever_node(state: PipelineState) -> PipelineState:
     _append_trace(state, "retriever")
     config = state.get("_config", {}) or {}
     raw_input = state.get("input_text", "") or ""
-    truncate_chars_limit = config.get("truncate_chars")
-    preprocessed_text = truncate_text(raw_input, truncate_chars_limit) if truncate_chars_limit else raw_input
-    analysis_context = build_analysis_context(preprocessed_text, config)
+    analysis_context = build_analysis_context(raw_input, config)
     state["analysis_context"] = analysis_context
     return state
 

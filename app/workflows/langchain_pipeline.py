@@ -2,16 +2,18 @@
 LangChain Pipeline: Sequential execution.
 """
 
-from typing import Optional, Dict, Any
-from time import perf_counter
-from datetime import datetime
+from __future__ import annotations
 
-from agents.reader import run as run_reader
-from agents.summarizer import run as run_summarizer
+from datetime import datetime
+from time import perf_counter
+from typing import Any, Dict, Optional
+
 from agents.critic import run as run_critic
 from agents.integrator import run as run_integrator
-from telemetry import log_row
+from agents.reader import run as run_reader
+from agents.summarizer import run as run_summarizer
 from llm import configure
+from telemetry import log_row
 from utils import (
     build_analysis_context,
     count_numeric_results,

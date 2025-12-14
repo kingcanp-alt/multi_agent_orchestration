@@ -3,7 +3,9 @@ Integrator Agent: Creates final meta-summary from previous steps.
 """
 
 from __future__ import annotations
+
 from langchain_core.prompts import ChatPromptTemplate
+
 from llm import llm
 
 INTEGRATOR_PROMPT = ChatPromptTemplate.from_template(
