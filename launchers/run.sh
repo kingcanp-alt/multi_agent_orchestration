@@ -1,8 +1,8 @@
 #!/bin/bash
 # Multi-Agent Orchestration - Runner (macOS/Linux)
 
-# Wechsle ins Script-Verzeichnis
-cd "$(dirname "$0")"
+# Wechsle ins Projekt-Root (Startskripte liegen nun in launchers/)
+cd "$(dirname "$0")/.."
 
 echo "========================================"
 echo "Multi-Agent Orchestration Workshop"
@@ -72,5 +72,4 @@ echo "Zum Beenden: Strg+C"
 echo "========================================"
 echo ""
 
-$PYTHON_CMD -m streamlit run app.py
-
+$PYTHON_CMD -m streamlit run app/app.py

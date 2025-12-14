@@ -13,7 +13,7 @@ Stelle sicher, dass die Streamlit-App läuft. Starte bei Bedarf `streamlit run a
 
 ### Materialien bereitstellen
 
-Bereite ein Test-PDF vor (2-3 Seiten). Stelle das Teilnehmer-Skript bereit (ausgedruckt oder als Link). Prüfe Beamer/Laptop-Verbindung für eventuelle Präsentationen.
+Bereite ein Test-PDF vor (2-3 Seiten). Stelle das Teilnehmer-Skript bereit (ausgedruckt oder als Link zu `docs/participants/TEILNEHMER_SKRIPT.md`). Prüfe Beamer/Laptop-Verbindung für eventuelle Präsentationen.
 
 ### App-Funktionalität prüfen
 
@@ -57,7 +57,7 @@ Formuliere das Workshop-Ziel: Den gleichen Workflow mit allen drei Frameworks im
 
 Zeige die wichtigsten Elemente der App: Sidebar mit Settings, Presets und Model-Auswahl, Pipeline-Auswahl (LangChain, LangGraph, DSPy), Buttons ("Starten", "Alle Pipelines vergleichen", "DSPy Teleprompt Gain").
 
-Weise die Teilnehmer an, dem Teilnehmer-Skript zu folgen, beginnend mit Teil 2.
+Weise die Teilnehmer an, dem Teilnehmer-Skript zu folgen (`docs/participants/TEILNEHMER_SKRIPT.md`), beginnend mit Teil 2.
 
 ---
 
@@ -107,7 +107,7 @@ Teilnehmer führen die LangGraph-Pipeline aus und analysieren die Graph-Visualis
 
 Dann öffnen sie `workflows/langgraph_pipeline.py` und schauen sich `_build_langgraph_workflow` an (Zeilen 186-204). Zeige ihnen, wie der Code den Graph explizit aufbaut mit `graph.add_node()` und `graph.add_edge()`.
 
-Demonstriere die Graph-Struktur live: "Input → Retriever → Reader → Summarizer → Critic → Quality → Judge → Integrator → Output. Die Graph-Visualisierung ist der entscheidende Unterschied zu LangChain. Und im Code seht ihr die explizite Struktur."
+Demonstriere die Graph-Struktur live: "Input - Retriever - Reader - Summarizer - Critic - Quality - Judge - Integrator - Output. Die Graph-Visualisierung ist der entscheidende Unterschied zu LangChain. Und im Code seht ihr die explizite Struktur."
 
 Hinweis: Falls Teilnehmer die Graph-Visualisierung nicht sehen, weise darauf hin, dass sie nach unten scrollen müssen.
 
@@ -175,7 +175,7 @@ Hinweis: Falls eine Warnung erscheint, dass DSPy nicht installiert ist, erkläre
 
 Warnung vorab: "Achtung: Ausführung dauert 1-2 Minuten. Teleprompting optimiert Prompts basierend auf Trainingsdaten."
 
-Teilnehmer aktivieren "DSPy optimieren", prüfen den Dev-Set Pfad (`eval/dev.jsonl`) und klicken auf "DSPy Teleprompt Gain". 
+Teilnehmer aktivieren "DSPy optimieren", prüfen den Dev-Set Pfad (`dev-set/dev.jsonl`) und klicken auf "DSPy Teleprompt Gain". 
 
 Während der Wartezeit (2 Minuten) erkläre den Prozess: "DSPy testet verschiedene Prompts. Es nutzt das Dev-Set (Trainingsdaten mit Beispielen). Es evaluiert jeden Prompt gegen die Beispiele und wählt die optimale Variante. Dies ist Few-Shot-Bootstrapping - das System lernt aus Beispielen und optimiert sich selbst."
 

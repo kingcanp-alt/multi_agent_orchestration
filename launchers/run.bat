@@ -1,7 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 title Multi-Agent Orchestration - Workshop App
-cd /d "%~dp0"
+REM Wechsel ins Projekt-Root (Startskripte liegen nun in launchers\)
+cd /d "%~dp0.."
 
 echo ========================================
 echo Multi-Agent Orchestration Workshop
@@ -78,6 +79,6 @@ echo Zum Beenden: Strg+C im Fenster
 echo ========================================
 echo.
 
-%PYTHON_CMD% -m streamlit run app.py
+%PYTHON_CMD% -m streamlit run app/app.py
 
 endlocal

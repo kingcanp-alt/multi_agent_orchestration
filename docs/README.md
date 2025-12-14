@@ -1,28 +1,20 @@
-# Dokumentation
+# Dokumentation im Überblick
 
-Dieser Ordner enthält alle Workshop-Dokumentation, getrennt nach Zielgruppe.
+Dieser Ordner enthält die Workshop-Unterlagen. Die Dateien sind nach Zielgruppe getrennt.
 
-## Für Workshop-Teilnehmer
+## Für Teilnehmer
 
-Ordner `teilnehmer/`:
+Alle wichtigen Schritte stehen im Ordner `participants/`:
+- `START_HIER.md`: Einstieg und Setup
+- `TEILNEHMER_SKRIPT.md`: Schritt-für-Schritt-Aufgaben und Experimente
+- `CODE_EXPERIMENTE.md`: Vorbereitete Code-Snippets zum Nachbauen
 
-- **START_HIER.md** - Einstiegspunkt, Setup-Anleitung
-- **TEILNEHMER_SKRIPT.md** - Hauptskript mit allen Aufgaben und Experimenten
-- **CODE_EXPERIMENTE.md** - Code-Snippets zum Kopieren
+Die meisten Teilnehmer starten hier.
 
-Schnellstart: Lest zuerst `teilnehmer/START_HIER.md`
+## Für Moderatoren
 
-## Für Workshop-Moderatoren
+Die Moderatorenunterlagen stehen in `moderators/`. Sie enthalten Zeitpläne, Checklisten und Hinweise zur Code-Verteilung.
 
-Ordner `moderatoren/`:
+## Projektüberblick
 
-- **WORKSHOP_LEITFADEN.md** - Hauptdatei mit Minute-für-Minute Anleitung
-- **WORKSHOP_CHECKLIST.md** - Vorbereitung und Checklisten
-- **WORKSHOP_CODE_BEREITSTELLUNG.md** - Code-Verteilung an Teilnehmer
-
-Schnellstart: Lest zuerst `moderatoren/WORKSHOP_LEITFADEN.md`
-
-## Projekt-Übersicht
-
-Für allgemeine Informationen zum Projekt siehe `README.md` im Projekt-Root.
-
+Allgemeine Projektinfos und Hintergründe stehen in `project_overview.md`.

@@ -36,7 +36,7 @@ def run_example(text: str, cfg: Dict):
     }
 
 if __name__ == "__main__":
-    # Minimal-Konfiguration
+    # Basis-Konfiguration
     cfg = {
         "truncate_chars": 4000,
         "sections_enabled": True,
@@ -46,9 +46,9 @@ if __name__ == "__main__":
         # DSPy Teleprompting hier aus; in der App per Toggle
         "dspy_teleprompt": False,
     }
-    dev_path = "eval/dev.jsonl"
+    dev_path = "dev-set/dev.jsonl"
     if not os.path.exists(dev_path):
-        print("Missing eval/dev.jsonl")
+        print("Missing dev-set/dev.jsonl")
         sys.exit(1)
 
     results = []

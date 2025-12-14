@@ -1,123 +1,96 @@
-# Multi-Agent Orchestration Demo
+# Multi Agent Paper Analyzer
 
-Paper-Analyzer mit drei Orchestrierungs-Varianten:
-- **LangChain**: Sequenziell (Reader - Summarizer - Critic - Integrator)
-- **LangGraph**: Expliziter Graph mit DOT-Visualisierung
-- **DSPy**: Deklarativ mit optionalem Teleprompting (Few-Shot-Bootstrap)
-
----
-
-## Workshop-Teilnehmer: Super einfacher Start!
-
-**Einfachste Methode:** Doppelklick auf `run.bat` (Windows) oder `run.sh` (Mac/Linux)!
-
-### Schritt 1: Code herunterladen
-- GitHub-Repo klonen ODER ZIP-Datei entpacken
-
-### Schritt 2: Doppelklick-Start
-- **Windows:** Doppelklick auf `run.bat`
-- **Mac/Linux:** Doppelklick auf `run.sh` (oder: `chmod +x run.sh && ./run.sh`)
-
-**Das wars!** App öffnet sich automatisch im Browser (1-2 Minuten beim ersten Mal).
-
-**Einzige manuelle Sache:** API-Key in `.env` eintragen (falls beim Start erstellt wurde)
-
-**Detaillierte Anleitung:** Siehe `docs/teilnehmer/START_HIER.md`
-
-**Workshop-Dokumentation:** Siehe `docs/teilnehmer/` für alle Dokumente
+Wir orchestrieren denselben Workflow mit drei Frameworks:
+- **LangChain**: Sequenziell (Reader → Summarizer → Critic → Integrator)
+- **LangGraph**: Graph mit DOT Visualisierung für den Kontrollfluss
+- **DSPy**: Deklarativ mit optionalem Teleprompting
 
 ---
 
-## Quickstart
+## Schnell starten
+- **Windows:** Doppelklick auf `launchers/run.bat`
+- **Mac/Linux:** Doppelklick auf `launchers/run.sh` (oder `chmod +x launchers/run.sh && ./launchers/run.sh`)
 
-1) **Python 3.9+ installieren** (falls nicht vorhanden)
+Das Startskript prüft Python, legt ein virtuelles Environment an, installiert die Abhängigkeiten und startet Streamlit. Wenn `.env` neu angelegt wird, kommt eine kurze Erinnerung zum API-Key.
+
+Mehr Details zur Einrichtung stehen in `docs/participants/START_HIER.md`.
+
+---
+
+## Checkliste für den Schnellstart
+1. Python 3.9+ prüfen:
    ```bash
-   python --version  # Sollte 3.9+ sein
+   python --version
    ```
-
-2) **Virtual Environment erstellen:**
+2. Virtual Environment einrichten:
    ```bash
-   python -m venv venv           # oder py -3 -m venv venv (Windows)
-   source venv/bin/activate      # Windows: venv\Scripts\activate
+   python -m venv venv
+   source venv/bin/activate    # Windows: venv\Scripts\activate
    ```
-
-3) **Abhängigkeiten installieren:**
+3. Abhängigkeiten installieren:
    ```bash
    pip install -r requirements.txt
    ```
-
-4) **API-Key konfigurieren:**
-   
-   Kopiere `.env.example` zu `.env`:
+4. API-Key setzen (falls noch nicht vorhanden):
    ```bash
    cp .env.example .env
+   # dann OPENAI_API_KEY=sk-... eintragen
    ```
-   
-   Dann `.env` bearbeiten und deinen OpenAI API-Key eintragen:
-   ```
-   OPENAI_API_KEY=sk-dein-api-key-hier
-   ```
-
-5) **App starten:**
+5. App starten:
    ```bash
-   streamlit run app.py
+   python -m streamlit run app/app.py
    ```
-   
-   Die App öffnet sich automatisch unter http://localhost:8501
 
 ---
 
 ## Nutzung
-- Lade PDF/TXT hoch, die App erstellt einen abschnittsbasierten Analyse-Kontext (Budget konfigurierbar).
-- Wähle Pipeline (LangChain/LangGraph/DSPy) und Modell/Parameter in der Sidebar.
-- Button "Starten" führt die gewählte Pipeline aus.
-- Button "Alle Pipelines vergleichen" führt LC/LG/DSPy nacheinander aus und zeigt Metriken/Outputs nebeneinander.
-- Button "DSPy Teleprompt Gain" vergleicht DSPy-Base vs. Teleprompting (Dev-Set nötig).
-- Expander "Telemetry (CSV)" zeigt gesammelte Laufzeiten pro Engine (`telemetry.csv`).
+- Datei hochladen (PDF/TXT) → strukturierte Notizen + Kontext
+- Pipeline wählen (LangChain, LangGraph, DSPy) und Einstellungen anpassen
+- „Starten“ führt die gewählte Pipeline aus
+- „Alle Pipelines vergleichen“ zeigt Outputs und Metriken nebeneinander
+- DSPy Teleprompt Gain vergleicht DSPy mit und ohne Teleprompting (Dev-Set erforderlich)
+- Im Expander „Telemetry (CSV)“ stehen Laufzeitdaten
 
 ---
 
-## DSPy
-- Aktivierbar über Sidebar-Checkbox "DSPy optimieren" (Teleprompting), nutzt `eval/dev.jsonl` als Dev-Set.
-- **Hinweis:** Das Demo-Dev-Set enthält nur 2 kleine Beispiele.
-- Falls `dspy-ai` oder `litellm` fehlen, führt App einen Stub aus.
+## Details zu DSPy
+- Checkbox „DSPy optimieren“ aktiviert Teleprompting mit `dev-set/dev.jsonl`
+- Das Dev-Set enthält nur wenige Beispiele und dient als Demo
+- Fehlen `dspy-ai` oder `litellm`, läuft eine Platzhalter-Variante
 
 ---
 
 ## Evaluierung
-- `eval_runner.py` führt ein Dev-Set über alle Pipelines aus und berechnet ein einfaches unigram-F1 zwischen Kontext und Summary.
+- `app/eval_runner.py` wertet `dev-set/dev.jsonl` über alle Pipelines aus und berechnet ein einfaches unigram-F1
 
 ---
 
 ## Struktur
-
 ### Code
-- `agents/`: Einzel-Agenten (Reader, Summarizer, Critic, Integrator)
-- `workflows/`: Pipelines für LangChain, LangGraph, DSPy
-- `eval/`: Dev-Set für DSPy Teleprompting
-- `telemetry.py`: CSV-Logging
-- `utils.py`: Text-Normalisierung und Abschnittslogik
-- `llm.py`: LLM-Konfiguration
+- `app/`: Anwendungscode
+  - `app/app.py`: Streamlit-Frontend
+  - `app/agents/`: Reader, Summarizer, Critic, Integrator
+  - `app/workflows/`: Pipeline Definitionen
+  - `app/eval_runner.py`: Dev Set Auswertung
+  - `app/llm.py`: LLM Konfiguration
+  - `app/telemetry.py`: Logging
+  - `app/utils.py`: Text Vorverarbeitung
+- `dev-set/`: Beispiel-Inputs für Teleprompting
 
 ### Dokumentation
-- `docs/teilnehmer/`: Dokumentation für Workshop-Teilnehmer
-  - `START_HIER.md`: Einstiegspunkt für Teilnehmer
-  - `TEILNEHMER_SKRIPT.md`: Hauptskript mit allen Aufgaben
-  - `CODE_EXPERIMENTE.md`: Code-Snippets zum Kopieren
-- `docs/moderatoren/`: Dokumentation für Workshop-Moderatoren
-  - `WORKSHOP_LEITFADEN.md`: Hauptdatei mit Zeitplan
-  - `WORKSHOP_CHECKLIST.md`: Vorbereitung und Checklisten
-  - `WORKSHOP_CODE_BEREITSTELLUNG.md`: Code-Verteilung
-- `README.md`: Projekt-Übersicht (diese Datei)
+- `docs/participants/`: Anleitungen für Teilnehmer
+  - `START_HIER.md`
+  - `TEILNEHMER_SKRIPT.md`
+  - `CODE_EXPERIMENTE.md`
+- `docs/moderators/`: Moderatorenunterlagen
+- `project_overview.md`: Hintergrund & Design
 
-### Start-Skripte
-- `run.bat`: Windows Start-Skript (Doppelklick-Start)
-- `run.sh`: Mac/Linux Start-Skript (Doppelklick-Start)
+### Startskripte
+- `launchers/run.bat`: Windows Startskript
+- `launchers/run.sh`: Mac/Linux Startskript
 
 ---
 
-## Workshop-Informationen
-
-**Für Teilnehmer:**
-- Start: Siehe `docs/teilnehmer/START_HIER.md`
-- Workshop-Skript: Siehe `docs/teilnehmer/TEILNEHMER_SKRIPT.md`
+## Workshop Informationen
+- Start: `docs/participants/START_HIER.md`
+- Aufgaben & Experimente: `docs/participants/TEILNEHMER_SKRIPT.md`

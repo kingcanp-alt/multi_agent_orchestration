@@ -217,7 +217,7 @@ else:
 
     # -------- Optional: leichtgewichtiges Teleprompting (Bootstrap FS) --------
     #
-    # Du kannst kleine Dev-Beispiele in eval/dev.jsonl (freiwillig) ablegen:
+    # Du kannst kleine Dev-Beispiele in dev-set/dev.jsonl (freiwillig) ablegen:
     # Jede Zeile: {"text": "...", "target_summary": "..."}
     #
     # Wir nehmen eine sehr einfache Overlap-Metrik (keine externen Pakete).
@@ -250,7 +250,7 @@ else:
         # aktiviere mit cfg["dspy_teleprompt"]=True
         if not cfg.get("dspy_teleprompt"):
             return
-        dev_path = cfg.get("dspy_dev_path", "eval/dev.jsonl")
+        dev_path = cfg.get("dspy_dev_path", "dev-set/dev.jsonl")
         dev = _load_devset(dev_path)
         if not dev:
             return  # nichts zu tun

@@ -5,7 +5,7 @@
 
 ## Code-Bereitstellung
 
-**WICHTIG:** Siehe `WORKSHOP_CODE_BEREITSTELLUNG.md` für detaillierte Anleitung!
+**WICHTIG:** Siehe `WORKSHOP_CODE_BEREITSTELLUNG.md` (im selben Ordner) für detaillierte Anleitung!
 
 **Empfohlene Option:** GitHub-Repo + Online-App als Fallback
 
@@ -13,7 +13,7 @@
 
 ## 1 Woche vorher
 
-- [ ] **Code-Bereitstellung** (SIEHE `WORKSHOP_CODE_BEREITSTELLUNG.md`)
+- [ ] **Code-Bereitstellung** (SIEHE `WORKSHOP_CODE_BEREITSTELLUNG.md` im selben Ordner)
   - [ ] GitHub-Repo erstellt und Code hochgeladen
   - [ ] Backup-Branch erstellt (`workshop-backup`)
   - [ ] README.md mit Setup-Anleitung aktualisiert
@@ -28,10 +28,10 @@
   - [ ] OpenAI API Key prüfen (oder lokales Modell konfigurieren)
   - [ ] DSPy Installation prüfen (falls Teleprompting-Demo geplant)
   - [ ] Test-PDFs vorbereiten (2-3 kurze Research Papers)
-  - [ ] Dev-Set prüfen (`eval/dev.jsonl` existiert und ist valide)
+- [ ] Dev-Set prüfen (`dev-set/dev.jsonl` existiert und ist valide)
 
 - [ ] **Materialien**
-  - [ ] Präsentationsfolien erstellen (siehe `WORKSHOP_SLIDES_OUTLINE.md`)
+  - [ ] Präsentationsfolien erstellen (optional)
   - [ ] Code-Snippets für Walkthrough vorbereiten
   - [ ] Vergleichstabelle mit Metriken vorbereiten (optional: vorgefertigte Ergebnisse)
 

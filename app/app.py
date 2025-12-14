@@ -127,13 +127,13 @@ with st.sidebar:
     if use_dspy_teleprompt:
         dspy_dev_path = st.text_input(
             "Dev-Set Path",
-            value="eval/dev.jsonl",
+            value="dev-set/dev.jsonl",
             help="Path to JSONL file containing training examples. Each line must be a JSON object with input text and expected summary. The system uses this file for prompt optimization.",
         )
         if not os.path.exists(dspy_dev_path):
             st.warning(f"File not found: {dspy_dev_path}")
     else:
-        dspy_dev_path = "eval/dev.jsonl"
+        dspy_dev_path = "dev-set/dev.jsonl"
     
     show_debug = st.checkbox("Debug Mode", value=False, help="Show detailed error messages and stack traces when errors occur. Useful for troubleshooting.")
 

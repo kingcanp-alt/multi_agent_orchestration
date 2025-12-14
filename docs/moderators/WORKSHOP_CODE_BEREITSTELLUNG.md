@@ -148,8 +148,8 @@
 - Code-Dateien (`agents/*.py`, `workflows/*.py`)
 - `app.py`
 - `requirements.txt`
-- `docs/teilnehmer/TEILNEHMER_SKRIPT.md`
-- `docs/teilnehmer/CODE_EXPERIMENTE.md`
+- `docs/participants/TEILNEHMER_SKRIPT.md`
+- `docs/participants/CODE_EXPERIMENTE.md`
 
 ### Nicht nötig:
 - `venv/` (wird lokal erstellt)
@@ -225,7 +225,7 @@
 
 ### Während Code-Experimenten:
 - [ ] Teilnehmer erinnern: Git checkout für Wiederherstellung
-- [ ] Code-Snippets aus `docs/teilnehmer/CODE_EXPERIMENTE.md` bereit
+- [ ] Code-Snippets aus `docs/participants/CODE_EXPERIMENTE.md` bereit
 - [ ] Schnelle Hilfe bei Syntax-Fehlern
 
 ---
@@ -276,4 +276,3 @@
 **Am Tag:**
 - GitHub-Repo als Hauptoption
 - Online-App als Alternative für schnelle Teilnehmer oder bei Problemen
-
