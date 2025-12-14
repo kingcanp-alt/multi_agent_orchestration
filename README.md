@@ -18,17 +18,17 @@ Paper-Analyzer mit drei Orchestrierungs-Varianten:
 - **Windows:** Doppelklick auf `run.bat`
 - **Mac/Linux:** Doppelklick auf `run.sh` (oder: `chmod +x run.sh && ./run.sh`)
 
-**Das war's!** Die App öffnet sich automatisch im Browser (1-2 Minuten beim ersten Mal).
+**Das wars!** App öffnet sich automatisch im Browser (1-2 Minuten beim ersten Mal).
 
 **Einzige manuelle Sache:** API-Key in `.env` eintragen (falls beim Start erstellt wurde)
 
 **Detaillierte Anleitung:** Siehe `docs/teilnehmer/START_HIER.md`
 
-**Workshop-Dokumentation:** Siehe `docs/teilnehmer/` für alle Teilnehmer-Dokumente
+**Workshop-Dokumentation:** Siehe `docs/teilnehmer/` für alle Dokumente
 
 ---
 
-## Quickstart (Detailliert)
+## Quickstart
 
 1) **Python 3.9+ installieren** (falls nicht vorhanden)
    ```bash
@@ -57,10 +57,6 @@ Paper-Analyzer mit drei Orchestrierungs-Varianten:
    ```
    OPENAI_API_KEY=sk-dein-api-key-hier
    ```
-   
-   **Wo bekomme ich einen API-Key?**
-   - [OpenAI Platform](https://platform.openai.com/api-keys)
-   - Oder fragt eure Workshopleiter
 
 5) **App starten:**
    ```bash
@@ -78,14 +74,13 @@ Paper-Analyzer mit drei Orchestrierungs-Varianten:
 - Button "Alle Pipelines vergleichen" führt LC/LG/DSPy nacheinander aus und zeigt Metriken/Outputs nebeneinander.
 - Button "DSPy Teleprompt Gain" vergleicht DSPy-Base vs. Teleprompting (Dev-Set nötig).
 - Expander "Telemetry (CSV)" zeigt gesammelte Laufzeiten pro Engine (`telemetry.csv`).
-- Optionales W&B-Logging aktivierbar via Env `WANDB_ENABLED=1` (Projekt/Entity per `WANDB_PROJECT`/`WANDB_ENTITY`).
 
 ---
 
 ## DSPy
 - Aktivierbar über Sidebar-Checkbox "DSPy optimieren" (Teleprompting), nutzt `eval/dev.jsonl` als Dev-Set.
-- **Hinweis:** Das Demo-Dev-Set enthält nur 2 kleine Beispiele. Für echte Optimierung sollte ein größeres, thematisch passendes Dev-Set verwendet werden.
-- Falls `dspy-ai` oder `litellm` fehlen, führt die App einen Stub aus und warnt im UI.
+- **Hinweis:** Das Demo-Dev-Set enthält nur 2 kleine Beispiele.
+- Falls `dspy-ai` oder `litellm` fehlen, führt App einen Stub aus.
 
 ---
 
@@ -126,7 +121,3 @@ Paper-Analyzer mit drei Orchestrierungs-Varianten:
 **Für Teilnehmer:**
 - Start: Siehe `docs/teilnehmer/START_HIER.md`
 - Workshop-Skript: Siehe `docs/teilnehmer/TEILNEHMER_SKRIPT.md`
-
-**Für Moderatoren:**
-- Workshop-Leitfaden: Siehe `docs/moderatoren/WORKSHOP_LEITFADEN.md`
-- Checkliste: Siehe `docs/moderatoren/WORKSHOP_CHECKLIST.md`
