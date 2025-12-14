@@ -1,5 +1,5 @@
 """
-Summarizer Agent: Creates summary from structured notes.
+Summarizer Agent: Creates summary from notes.
 """
 
 from __future__ import annotations

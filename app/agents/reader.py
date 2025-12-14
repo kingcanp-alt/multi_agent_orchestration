@@ -1,5 +1,5 @@
 """
-Reader Agent: Extracts structured notes from papers.
+Reader Agent: Extracts notes from papers.
 """
 
 from __future__ import annotations

@@ -1,4 +1,3 @@
-# eval_runner.py
 import json, re, os, sys
 from typing import Dict
 
@@ -51,14 +50,13 @@ def run_example(text: str, cfg: Dict):
     }
 
 if __name__ == "__main__":
-    # Basis-Konfiguration
+    # Base config
     cfg = {
         "truncate_chars": 4000,
         "sections_enabled": True,
         "section_budget_chars": 3500,
         "min_analysis_chars": 800,
         "auto_expand_if_short": True,
-        # DSPy Teleprompting hier aus; in der App per Toggle
         "dspy_teleprompt": False,
     }
     dev_path = "dev-set/dev.jsonl"
@@ -75,7 +73,6 @@ if __name__ == "__main__":
                 continue
             results.append(run_example(text, cfg))
 
-    # Kurzer Überblick
     for i, r in enumerate(results, 1):
         print(f"\n# Example {i}")
         for k in ("lc","lg","dspy"):

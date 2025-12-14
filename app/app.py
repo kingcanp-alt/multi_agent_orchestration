@@ -1,7 +1,7 @@
 """
-Streamlit App for Multi-Agent Paper Analyzer.
+Streamlit App for Paper Analyzer.
 
-Supports LangChain, LangGraph, and DSPy pipelines.
+LangChain, LangGraph, and DSPy pipelines.
 """
 
 import os
@@ -28,12 +28,12 @@ from utils import build_analysis_context, extract_confidence_line
 
 load_dotenv()
 st.set_page_config(
-    page_title="Paper Analyzer",
+    page_title="Paper Summarizer",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for tooltips and spacing
+# CSS
 st.markdown("""
 <style>
     .tooltip {
@@ -99,14 +99,14 @@ st.markdown("""
 st.title("Paper Analyzer")
 st.caption("Multi-Agent Orchestration with LangChain, LangGraph & DSPy")
 
-# Help section - always visible at the top (compact)
+# Help
 st.markdown("""
 <div class="help-box">
     <strong>Quick Start:</strong> Upload document → Select pipeline → Analyze
 </div>
 """, unsafe_allow_html=True)
 
-# Sidebar settings
+# Settings
 with st.sidebar:
     st.markdown("### Settings")
     st.markdown("---")
@@ -132,7 +132,7 @@ with st.sidebar:
     
     model = st.selectbox(
         "Model",
-        ["gpt-4o-mini", "gpt-4o"],
+        ["gpt-4o-mini", "gpt-4o", "gpt-4.1"],
         index=0,
         help="gpt-4o-mini: Faster and cheaper, good for most tasks\n\ngpt-4o: More capable but slower and more expensive",
     )
@@ -150,13 +150,13 @@ with st.sidebar:
             help="Controls randomness in responses:\n\n0.0 = Deterministic, same input always gives same output\n0.1-0.3 = Slightly creative, good for structured tasks\n0.7-1.0 = Very creative, more variation",
         )
     
-    # DSPy settings - show if DSPy is available (since we can't check active tab here)
+    # DSPy settings
     if DSPY_READY:
         with st.expander("DSPy"):
             use_dspy_teleprompt = st.checkbox(
                 "Enable Teleprompting",
                 value=False,
-                help="DSPy Teleprompting automatically optimizes prompts using examples from a dev set. It uses BootstrapFewShot to find better prompt examples. Requires a JSONL file with input-output pairs.",
+                help="DSPy Teleprompting automatically optimizes prompts using examples from a dev set. Uses BootstrapFewShot to find better prompt examples. Requires JSONL file with input-output pairs.",
             )
             
             if use_dspy_teleprompt:
@@ -172,7 +172,7 @@ with st.sidebar:
             
             show_debug = st.checkbox("Debug Mode", value=False, help="Show detailed error messages and stack traces when errors occur. Useful for troubleshooting.")
     else:
-        # DSPy not available - set defaults
+        # DSPy not available
         use_dspy_teleprompt = False
         dspy_dev_path = "dev-set/dev.jsonl"
         show_debug = False
@@ -187,8 +187,8 @@ config = {
     "debug": bool(show_debug),
     "dspy_teleprompt": use_dspy_teleprompt,
     "dspy_dev_path": dspy_dev_path,
-    "csv_telemetry": True,  # Always enabled, shown in expander below
-    "max_critic_loops": 2,  # Default value for LangGraph (not in sidebar anymore)
+    "csv_telemetry": True,
+    "max_critic_loops": 2, # Default for LangGraph
 }
 
 # Main tabs
@@ -277,22 +277,22 @@ with tab_analyse:
         else:
             pipeline_result = None
             try:
-                with st.status("Analyzing document...", expanded=True) as status:
+                with st.status("Analyzing document", expanded=True) as status:
                     if pipeline_mode == "LangChain":
-                        status.update(label="Running LangChain...", state="running")
+                        status.update(label="Running LangChain", state="running")
                         pipeline_result = run_lc(analysis_context, config)
                     elif pipeline_mode == "LangGraph":
-                        status.update(label="Running LangGraph...", state="running")
+                        status.update(label="Running LangGraph", state="running")
                         pipeline_result = run_lg(analysis_context, config)
                     else:
-                        status.update(label="Running DSPy...", state="running")
+                        status.update(label="Running DSPy", state="running")
                         if use_dspy_teleprompt:
                             status.update(label="Optimizing with Teleprompting...", state="running")
                         pipeline_result = run_dspy(analysis_context, config)
                     
                     status.update(label="Analysis complete!", state="complete")
                 
-                # Display results
+                # Results
                 if pipeline_result:
                     st.markdown("## Results")
                     
@@ -308,7 +308,7 @@ with tab_analyse:
                         st.metric("Meta Length", f"{meta_len:,} chars", help="Number of characters in the meta summary (final integrated summary)")
                     with col_meta4:
                         loops = int(pipeline_result.get("critic_loops", 0) or 0)
-                        st.metric("Critic Loops", str(loops), help="How many times LangGraph routed back to the Summarizer due to low critic score (LangGraph only).")
+                        st.metric("Critic Loops", str(loops), help="How many times LangGraph routed back to Summarizer due low critic score (LangGraph only).")
 
                     execution_trace = pipeline_result.get("execution_trace", []) or []
                     trace_set = {str(x).lower() for x in execution_trace if x}
@@ -346,7 +346,7 @@ with tab_analyse:
                         st.markdown("### Summary")
                         st.markdown(pipeline_result.get("summary"))
                     
-                    # Timing details
+                    # Timing
                     st.markdown("### Timing")
                     times = {
                         "Reader": pipeline_result.get('reader_s', 0),
@@ -360,7 +360,7 @@ with tab_analyse:
                         with col:
                             st.metric(key, f"{value:.2f}s")
                     
-                    # Notes & Critic in expanders
+                    # Notes & Critic
                     col_notes, col_critic = st.columns(2)
                     with col_notes:
                         if pipeline_result.get("structured"):
@@ -397,7 +397,7 @@ with tab_analyse:
 # Tab 2: Compare
 with tab_vergleich:
     st.markdown("### Compare All Pipelines")
-    st.info("Run all three pipelines on the same document to compare results.")
+    st.info("Run all pipelines on same document to compare results.")
     
     uploaded_files_compare = st.file_uploader(
         "Upload file for comparison",
@@ -416,7 +416,7 @@ with tab_vergleich:
         if not analysis_context_compare.strip():
             st.error("Please upload a file first!")
         else:
-            with st.status("Comparing pipelines...", expanded=True) as status:
+            with st.status("Comparing pipelines", expanded=True) as status:
                 results = {}
                 errors = {}
                 pipelines = [
@@ -427,7 +427,7 @@ with tab_vergleich:
                 
                 for label, runner in pipelines:
                     try:
-                        status.update(label=f"Running {label}...")
+                        status.update(label=f"Running {label}")
                         results[label] = runner()
                     except Exception as exc:
                         import traceback
@@ -467,7 +467,7 @@ with tab_vergleich:
             df = pd.DataFrame(table_rows)
             st.dataframe(df, use_container_width=True, hide_index=True)
             
-            # Runtime chart
+            # Runtime Comparison
             if not df.empty:
                 st.markdown("### Runtime Comparison")
                 chart_df = pd.DataFrame([
@@ -490,7 +490,7 @@ with tab_vergleich:
                 )
                 st.altair_chart(chart, use_container_width=True)
             
-            # Key metrics
+            # Key Metrics
             st.markdown("### Key Metrics")
             if len(table_rows) >= 3:
                 fastest = min(table_rows, key=lambda x: float(x["Total (s)"]))
@@ -504,7 +504,7 @@ with tab_vergleich:
                     avg_time = sum(float(r["Total (s)"]) for r in table_rows) / len(table_rows)
                     st.metric("Average Runtime", f"{avg_time:.2f}s")
             
-            # Detailed results in tabs
+            # Detailed results
             st.markdown("## Detailed Results")
             tabs = st.tabs(list(results.keys()))
             for tab, label in zip(tabs, results.keys()):
@@ -640,7 +640,7 @@ with tab_teleprompt:
                             with st.expander("Critic"):
                                 st.text(res.get("critic", ""))
 
-# CSV Telemetry - always visible at bottom
+# CSV Telemetry
 st.markdown("---")
 with st.expander("CSV Telemetry Data", expanded=False):
     telemetry_path = "telemetry.csv"
@@ -652,10 +652,10 @@ with st.expander("CSV Telemetry Data", expanded=False):
             if len(telemetry_df) > 0:
                 st.markdown(f"**Total runs:** {len(telemetry_df)}")
                 
-                # Show last 10 entries
+                # Last 10 entries
                 last_entries = telemetry_df.tail(10).copy()
                 
-                # Prepare columns for display
+                # Columns for display
                 display_cols = []
                 if "timestamp" in last_entries.columns:
                     display_cols.append("timestamp")
@@ -675,10 +675,10 @@ with st.expander("CSV Telemetry Data", expanded=False):
                     display_cols.append("critic_score")
                 
                 if display_cols:
-                    # Format the data for better display
+                    # Format data for better display
                     display_df = last_entries[display_cols].copy()
                     if "timestamp" in display_df.columns:
-                        # Format timestamp to show only date and time (remove microseconds)
+                        # Format timestamp only date and time
                         try:
                             display_df["timestamp"] = pd.to_datetime(display_df["timestamp"], errors="coerce").dt.strftime("%Y-%m-%d %H:%M:%S")
                         except Exception:
@@ -700,7 +700,7 @@ with st.expander("CSV Telemetry Data", expanded=False):
                         hide_index=True
                     )
                     
-                    # Chart for latency over time
+                    # Latency over time
                     if "latency_s" in telemetry_df.columns and "engine" in telemetry_df.columns:
                         st.markdown("**Latency over time:**")
                         plot_data = telemetry_df.tail(30).copy()
@@ -719,7 +719,7 @@ with st.expander("CSV Telemetry Data", expanded=False):
                         )
                         st.altair_chart(chart, use_container_width=True)
                 
-                # Download button
+                # Download CSV
                 csv_data = telemetry_df.to_csv(index=False)
                 st.download_button(
                     "Download CSV",
@@ -729,6 +729,6 @@ with st.expander("CSV Telemetry Data", expanded=False):
                     use_container_width=True
                 )
             else:
-                st.info("No telemetry data yet. Run a pipeline to start logging metrics.")
+                st.info("No data yet. Run a pipeline to start logging metrics.")
         except Exception as e:
             st.error(f"Could not load telemetry: {e}")

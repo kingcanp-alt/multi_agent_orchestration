@@ -1,12 +1,11 @@
 """
-LLM configuration for OpenAI (e.g., gpt-4o-mini).
+LLM config (gpt-4o-mini, gpt-4o....).
 """
 
 import os
 from typing import Optional
 from langchain_openai import ChatOpenAI
 
-# Try to load .env file when available
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -24,12 +23,12 @@ def _create_openai_llm(
     request_timeout_seconds: int,
     api_key: Optional[str] = None,
 ) -> ChatOpenAI:
-    """Return a configured ChatOpenAI instance."""
+    """Return ChatOpenAI instance."""
     api_key = api_key or os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise ValueError(
             "OPENAI_API_KEY must be set! "
-            "Please add it to .env file or set as environment variable."
+            "Please add to .env file"
         )
     
     return ChatOpenAI(
@@ -43,7 +42,7 @@ def _create_openai_llm(
 
 
 def configure(config: Optional[dict] = None) -> None:
-    """Set the global ChatOpenAI instance."""
+    """Set ChatOpenAI instance."""
     global _llm_instance
 
     config_dict = config or {}

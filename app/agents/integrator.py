@@ -1,5 +1,5 @@
 """
-Integrator Agent: Creates final meta-summary from all previous steps.
+Integrator Agent: Creates final meta-summary from previous steps.
 """
 
 from __future__ import annotations

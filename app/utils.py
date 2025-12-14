@@ -1,12 +1,10 @@
 """
-Helper functions for text processing and section detection.
+Helper for text processing.
 """
 
 from __future__ import annotations
 import re
 from typing import Dict, List, Tuple, Optional
-
-# Basic text helpers
 
 def _normalize_text(raw_text: str) -> str:
     """Fix PDF formatting issues."""
@@ -36,12 +34,11 @@ def truncate_text(text: str, max_characters: Optional[int]) -> str:
 
 # Remove metadata and boilerplate
 
-# Pattern for metadata keywords
 _METADATA_KEYWORDS_PATTERN = r"(?:university|institute|faculty|department|school of|affiliation|corresponding author|preprint|arxiv|doi|copyright|acknowledg(e)?ments?)"
 
 
 def strip_meta_head(raw_text: str) -> str:
-    """Drop metadata header and keep the abstract."""
+    """Drop metadata header."""
     if not raw_text:
         return ""
     
@@ -81,7 +78,7 @@ def strip_meta_head(raw_text: str) -> str:
 
 
 def strip_references_tail(raw_text: str) -> str:
-    """Drop the bibliography section."""
+    """Drop bibliography section."""
     if not raw_text:
         return ""
     
@@ -93,158 +90,6 @@ def strip_references_tail(raw_text: str) -> str:
             return raw_text[:references_match.start()].rstrip()
     
     return raw_text
-
-
-# Section detection
-
-_SECTION_PATTERNS: List[Tuple[str, str]] = [
-    ("abstract",     r"\babstract\b"),
-    ("introduction", r"\b(introduction|background)\b"),
-    ("methods",      r"\b(methods?|methodology|materials? and methods?)\b"),
-    ("experiments",  r"\b(experiments?|experimental setup)\b"),
-    ("evaluation",   r"\b(evaluation|metrics?)\b"),
-    ("results",      r"\bresults?\b"),
-    ("discussion",   r"\bdiscussion(s| and results)?\b"),
-    ("conclusion",   r"\b(conclusion|conclusions|concluding remarks|summary)\b"),
-    ("related",      r"\brelated work\b"),
-    ("limitations",  r"\blimitations?\b"),
-]
-
-_NUMERIC_HEADING_PATTERN = (
-    r"^\s*(?:\d+(?:\.\d+){0,2})\s+"
-    r"(abstract|introduction|background|methods?|methodology|materials? and methods?|"
-    r"experiments?|experimental setup|evaluation|metrics?|results?|discussion(?:s| and results)?|"
-    r"conclusion|conclusions|concluding remarks|summary|related work|limitations?)\b"
-)
-
-
-def split_sections(text: str) -> Dict[str, str]:
-    """Find paper sections by keywords and numbered headings."""
-    if not text:
-        return {}
-    
-    section_markers: List[Tuple[int, str]] = []
-    
-    for section_name, pattern in _SECTION_PATTERNS:
-        for match in re.finditer(pattern, text, flags=re.I):
-            section_markers.append((match.start(), section_name))
-    
-    for match in re.finditer(_NUMERIC_HEADING_PATTERN, text, flags=re.I | re.M):
-        detected_section = match.group(1).lower()
-        section_markers.append((match.start(), detected_section))
-    
-    section_markers.sort(key=lambda marker: marker[0])
-    
-    if not section_markers:
-        return {"body": text}
-    
-    sections: Dict[str, str] = {}
-    
-    for marker_index, (start_position, detected_name) in enumerate(section_markers):
-        if marker_index + 1 < len(section_markers):
-            end_position = section_markers[marker_index + 1][0]
-        else:
-            end_position = len(text)
-        
-        section_content = text[start_position:end_position].strip()
-        normalized_section_name = _normalize_section_name(detected_name)
-        existing_content = sections.get(normalized_section_name, "")
-        sections[normalized_section_name] = (existing_content + "\n\n" + section_content).strip()
-    
-    return sections
-
-
-def _normalize_section_name(detected_name: str) -> str:
-    """Normalize section names, e.g. 'conclusions' to 'conclusion'."""
-    detected_lower = detected_name.lower()
-    
-    if "conclusion" in detected_lower:
-        return "conclusion"
-    elif detected_lower.startswith("method") or "materials" in detected_lower:
-        return "methods"
-    elif detected_lower.startswith("result"):
-        return "results"
-    elif detected_lower.startswith("discussion"):
-        return "discussion"
-    elif detected_lower.startswith("background"):
-        return "introduction"
-    else:
-        return detected_lower
-
-
-def _select_sections(
-    detected_sections: Dict[str, str],
-    preferred_section_names: List[str],
-    character_budget: int
-) -> Tuple[str, Dict[str, int]]:
-    """
-    Pick sections within the character budget.
-    
-    Prefer abstract, methods, and results first.
-    Add other sections by length when room remains.
-    If no sections appear, use long paragraphs from the body.
-    """
-    if not detected_sections:
-        return "", {}
-    
-    selected_sections: List[str] = []
-    remaining_budget = character_budget
-    usage_statistics: Dict[str, int] = {}
-    
-    for preferred_section_name in preferred_section_names:
-        if remaining_budget <= 0:
-            break
-        
-        section_content = detected_sections.get(preferred_section_name, "")
-        if not section_content:
-            continue
-        
-        extracted_text = section_content[:remaining_budget]
-        selected_sections.append(extracted_text)
-        usage_statistics[preferred_section_name] = len(extracted_text)
-        remaining_budget -= len(extracted_text)
-    
-    if remaining_budget > 0:
-        remaining_sections = [
-            (section_name, section_content)
-            for section_name, section_content in detected_sections.items()
-            if section_name not in preferred_section_names and section_content
-        ]
-        remaining_sections.sort(key=lambda item: len(item[1]), reverse=True)
-        
-        for section_name, section_content in remaining_sections:
-            if remaining_budget <= 0:
-                break
-            
-            extracted_text = section_content[:remaining_budget]
-            selected_sections.append(extracted_text)
-            usage_statistics[section_name] = len(extracted_text)
-            remaining_budget -= len(extracted_text)
-    
-    if not selected_sections and "body" in detected_sections:
-        body_text = detected_sections["body"]
-        paragraphs = [
-            paragraph.strip()
-            for paragraph in body_text.split("\n\n")
-            if len(paragraph.strip()) > 80
-        ]
-        
-        paragraphs.sort(key=len, reverse=True)
-        
-        selected_paragraphs: List[str] = []
-        total_characters = 0
-        
-        for paragraph in paragraphs:
-            if total_characters + len(paragraph) > character_budget:
-                break
-            selected_paragraphs.append(paragraph)
-            total_characters += len(paragraph)
-        
-        usage_statistics["body"] = total_characters
-        return "\n\n".join(selected_paragraphs).strip(), usage_statistics
-    
-    combined_text = "\n\n".join(selected_sections).strip()
-    return combined_text, usage_statistics
 
 
 # Public API

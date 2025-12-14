@@ -27,7 +27,7 @@ from utils import (
 
 
 class PipelineState(TypedDict):
-    """State des LangGraph-Workflows."""
+    """State of LangGraph workflow."""
     input_text: str
     analysis_context: str
     notes: str

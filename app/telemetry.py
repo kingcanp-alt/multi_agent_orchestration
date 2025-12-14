@@ -1,19 +1,18 @@
-# Telemetry helpers
 import os, csv
 
 _DEFAULT_FIELDS: list[str] = [
-    "engine",          # "langchain" | "langgraph" | "dspy"
-    "input_chars",     # Length of input text
-    "summary_len",     # Length of summary
-    "meta_len",        # Length of meta-summary
-    "latency_s",       # Total time in seconds
-    "reader_s",        # Stage times optional (often set)
+    "engine", # "langchain" | "langgraph" | "dspy"
+    "input_chars", # input text
+    "summary_len", # length of summary
+    "meta_len", # meta-summary
+    "latency_s", # time in sec
+    "reader_s",
     "summarizer_s",
     "critic_s",
     "integrator_s",
 ]
 
-# Weights & Biases integration is optional
+# Weights & Biases integration optional
 _WANDB_ENABLED = os.getenv("WANDB_ENABLED", "").lower() in {"1", "true", "yes", "on"}
 _WANDB_PROJECT = os.getenv("WANDB_PROJECT") or "multi_agent_orchestration"
 _WANDB_ENTITY = os.getenv("WANDB_ENTITY")
@@ -41,7 +40,7 @@ def _get_wandb():
 
 
 def _ensure_fields(row: dict) -> list[str]:
-    """Add extra keys from the row to the default columns."""
+    """Add extra keys from row to default columns."""
     fields = list(_DEFAULT_FIELDS)
     for k in row.keys():
         if k not in fields:
@@ -50,9 +49,8 @@ def _ensure_fields(row: dict) -> list[str]:
 
 def log_row(row: dict, path: str = "telemetry.csv"):
     """
-    Write a telemetry row to CSV.
+    Write telemetry row to CSV.
 
-    Detect new columns and add them. Back up the old file when the header changes.
     """
     row = dict(row or {})
     fields = _ensure_fields(row)
