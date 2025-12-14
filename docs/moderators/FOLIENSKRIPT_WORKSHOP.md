@@ -117,6 +117,7 @@ Wenn ihr bei Setup/Netzwerk hängt: sofort auf „Code-Walkthrough ohne Ausführ
 
 **Grenzen-Hinweis**
 - „Wenn Notes keine Zahlen enthalten, kann die Summary keine validen Metriken liefern – der Prompt erzwingt ‚not reported‘.“
+- Ergänzend erwähnen: Die Tabelle unter „Alle Pipelines vergleichen“ zeigt jetzt ROUGE-1/ROUGE-2/ROUGE-L sowie Coverage/Coherence, sodass sich Prompt-Änderungen auch hinsichtlich Lexical Coverage und Satzkohärenz beurteilen lassen.
 
 ---
 
@@ -232,6 +233,7 @@ Wenn ihr bei Setup/Netzwerk hängt: sofort auf „Code-Walkthrough ohne Ausführ
 1. In der App „Enable Teleprompting“ aktivieren
 2. „Run Teleprompt Comparison“ starten
 3. Ergebnis vergleichen: F1 Gain vs. Latenz
+4. Tabs beobachten: `teleprompt_gain`, `teleprompt_target_lengths`, `teleprompt_prompt_focus` zeigen, welche Tags das Optimieren angestoßen haben; `meta` liefert `teleprompt_choice`.
 
 **Plenum-Fragen**
 - „Welche Art Dev-Beispiele würden Teleprompting *kaputt* machen? (biased, zu kurz, falsche Labels)“

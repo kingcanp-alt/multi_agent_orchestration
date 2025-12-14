@@ -71,6 +71,11 @@ if not exist ".env" (
 
 REM Dependencies installieren
 echo [3/4] Installiere Abhaengigkeiten (dauert 1-2 Minuten)...
+REM pip kann nach abgebrochenen Installs eine defekte "~penai*" Distribution warnen; cleanen wir vorab.
+for /f "delims=" %%i in ('%PYTHON_CMD% -c "import site; print(site.getsitepackages()[0])"') do set "SITE_PACKAGES=%%i"
+for /d %%d in ("%SITE_PACKAGES%\~penai*") do (
+    rmdir /s /q "%%d" >nul 2>&1
+)
 %PYTHON_CMD% -m pip install --upgrade pip --quiet >nul 2>&1
 %PYTHON_CMD% -m pip install -r requirements.txt --quiet
 if %ERRORLEVEL% NEQ 0 (

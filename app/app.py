@@ -18,7 +18,7 @@ from pypdf import PdfReader
 from workflows.langchain_pipeline import run_pipeline as run_lc
 from workflows.langgraph_pipeline import run_pipeline as run_lg
 from workflows.dspy_pipeline import run_pipeline as run_dspy, DSPY_READY
-from utils import build_analysis_context
+from utils import build_analysis_context, detect_quantitative_signal, extract_confidence_line
 
 load_dotenv()
 st.set_page_config(
@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for tooltips
+# Custom CSS for tooltips and spacing
 st.markdown("""
 <style>
     .tooltip {
@@ -57,6 +57,35 @@ st.markdown("""
         visibility: visible;
         opacity: 1;
     }
+    .main-content {
+        padding-top: 1rem;
+    }
+    .section-spacing {
+        margin-top: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    .help-box {
+        background-color: #f0f2f6;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        margin-top: 0.5rem;
+        border-left: 4px solid #1f77b4;
+        line-height: 1.5;
+        font-size: 0.9rem;
+    }
+    .stExpander {
+        margin-bottom: 0.75rem;
+    }
+    .element-container {
+        margin-bottom: 0.75rem;
+    }
+    div[data-testid="stFileUploader"] {
+        margin-bottom: 0.75rem;
+    }
+    .compact-section {
+        margin-bottom: 1rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -64,19 +93,17 @@ st.markdown("""
 st.title("Paper Analyzer")
 st.caption("Multi-Agent Orchestration with LangChain, LangGraph & DSPy")
 
-with st.expander("Help", expanded=False):
-    st.markdown("""
-    **Quick Start:**
-    1. Upload a document (PDF/TXT)
-    2. Select a pipeline
-    3. Start analysis
-    
-    Hover over the question mark icons to see detailed explanations of each setting.
-    """)
+# Help section - always visible at the top (compact)
+st.markdown("""
+<div class="help-box">
+    <strong>Quick Start:</strong> Upload document → Select pipeline → Analyze
+</div>
+""", unsafe_allow_html=True)
 
 # === SIDEBAR: SETTINGS ===
 with st.sidebar:
     st.markdown("### Settings")
+    st.markdown("---")
     
     preset = st.radio(
         "Preset",
@@ -136,6 +163,69 @@ with st.sidebar:
         dspy_dev_path = "dev-set/dev.jsonl"
     
     show_debug = st.checkbox("Debug Mode", value=False, help="Show detailed error messages and stack traces when errors occur. Useful for troubleshooting.")
+    
+    # === TELEMETRY ===
+    st.markdown("---")
+    st.markdown("### Telemetry")
+    
+    telemetry_path = "telemetry.csv"
+    if not os.path.exists(telemetry_path):
+        st.caption("No telemetry data yet.")
+    else:
+        try:
+            telemetry_df = pd.read_csv(telemetry_path)
+            if len(telemetry_df) > 0:
+                # Show last 5 entries in compact table
+                last_entries = telemetry_df.tail(5).copy()
+                
+                # Prepare columns for display (engine, latency_s, summary_len)
+                display_cols = []
+                if "engine" in last_entries.columns:
+                    display_cols.append("engine")
+                if "latency_s" in last_entries.columns:
+                    display_cols.append("latency_s")
+                if "summary_len" in last_entries.columns:
+                    display_cols.append("summary_len")
+                
+                if display_cols:
+                    # Format the data for better display
+                    display_df = last_entries[display_cols].copy()
+                    if "latency_s" in display_df.columns:
+                        display_df["latency_s"] = display_df["latency_s"].round(2)
+                    if "summary_len" in display_df.columns:
+                        display_df["summary_len"] = display_df["summary_len"].astype(int)
+                    
+                    # Compact table
+                    st.dataframe(
+                        display_df,
+                        use_container_width=True,
+                        hide_index=True,
+                        height=150
+                    )
+                    
+                    # Mini plot for latency over time
+                    if "latency_s" in telemetry_df.columns and "engine" in telemetry_df.columns:
+                        plot_data = telemetry_df.tail(20).copy()
+                        plot_data = plot_data.reset_index()
+                        plot_data["run"] = plot_data.index + 1
+                        
+                        mini_chart = (
+                            alt.Chart(plot_data)
+                            .mark_line(point=True, size=2)
+                            .encode(
+                                x=alt.X("run:Q", title="Run", axis=alt.Axis(labelFontSize=9)),
+                                y=alt.Y("latency_s:Q", title="Latency (s)", axis=alt.Axis(labelFontSize=9)),
+                                color=alt.Color("engine:N", legend=alt.Legend(title="Engine", labelFontSize=8, titleFontSize=9)),
+                            )
+                            .properties(height=120, width=280)
+                        )
+                        st.altair_chart(mini_chart, use_container_width=False)
+                
+                st.caption(f"Last {min(len(telemetry_df), 5)} of {len(telemetry_df)} runs")
+            else:
+                st.caption("No telemetry data yet.")
+        except Exception as e:
+            st.caption(f"Could not load telemetry: {e}")
 
 # Config
 config = {
@@ -154,31 +244,36 @@ tab_analyse, tab_vergleich, tab_teleprompt = st.tabs(["Analysis", "Compare", "DS
 
 # === TAB 1: ANALYSIS ===
 with tab_analyse:
-    st.markdown("### Upload Document")
+    col_upload, col_pipeline = st.columns([2, 1])
     
-    uploaded_files = st.file_uploader(
-        "Select PDF or TXT file",
-        type=["pdf", "txt"],
-        accept_multiple_files=True,
-    )
+    with col_upload:
+        st.markdown("### Upload Document")
+        uploaded_files = st.file_uploader(
+            "Select PDF or TXT file",
+            type=["pdf", "txt"],
+            accept_multiple_files=True,
+            label_visibility="collapsed",
+        )
+        
+        if uploaded_files:
+            st.success(f"{len(uploaded_files)} file(s) uploaded")
+            for file in uploaded_files:
+                file_size_mb = file.size / (1024 * 1024)
+                st.caption(f"{file.name} ({file_size_mb:.2f} MB)")
     
-    if uploaded_files:
-        st.success(f"{len(uploaded_files)} file(s) uploaded")
-        for file in uploaded_files:
-            file_size_mb = file.size / (1024 * 1024)
-            st.caption(f"{file.name} ({file_size_mb:.2f} MB)")
+    with col_pipeline:
+        st.markdown("### Select Pipeline")
+        pipeline_mode = st.radio(
+            "Pipeline",
+            ["LangChain", "LangGraph", "DSPy"],
+            label_visibility="collapsed",
+            help="LangChain: Sequential pipeline, simple and fast. Linear flow: Reader → Summarizer → Critic → Integrator.\n\nLangGraph: Graph-based orchestration with explicit control flow. Includes quality metrics and visualization.\n\nDSPy: Declarative pipeline using signatures. Can optimize prompts automatically with teleprompting.",
+        )
+        
+        if pipeline_mode == "DSPy" and not DSPY_READY:
+            st.warning("DSPy not installed. Install `dspy-ai` and `litellm` for full functionality.")
     
-    # Pipeline selection
-    st.markdown("### Select Pipeline")
-    pipeline_mode = st.radio(
-        "Pipeline",
-        ["LangChain", "LangGraph", "DSPy"],
-        horizontal=True,
-        help="LangChain: Sequential pipeline, simple and fast. Linear flow: Reader → Summarizer → Critic → Integrator.\n\nLangGraph: Graph-based orchestration with explicit control flow. Includes quality metrics and visualization.\n\nDSPy: Declarative pipeline using signatures. Can optimize prompts automatically with teleprompting.",
-    )
-    
-    if pipeline_mode == "DSPy" and not DSPY_READY:
-        st.warning("DSPy not installed. Install `dspy-ai` and `litellm` for full functionality.")
+    st.markdown("---")
     
     # Text processing
     def extract_pdf_text(file_handle) -> str:
@@ -220,10 +315,6 @@ with tab_analyse:
     
     if raw_text:
         analysis_context = build_analysis_context(raw_text, config)
-        with st.expander("Preview", expanded=False):
-            st.caption(f"Characters in analysis context: {len(analysis_context):,}")
-            preview_text = analysis_context[:2000] + ("..." if len(analysis_context) > 2000 else "")
-            st.text_area("", preview_text, height=150, disabled=True, label_visibility="collapsed")
     
     # Analyze button
     if st.button("Analyze", type="primary", use_container_width=True, disabled=not uploaded_files):
@@ -267,12 +358,72 @@ with tab_analyse:
                             st.metric("F1 Score", f"{f1:.3f}", help="F1 score measures overlap between notes and summary. Higher is better (0-1 range). Only available for LangGraph.")
                         else:
                             st.metric("F1 Score", "N/A", help="F1 score is not available for this pipeline")
+
+                    if pipeline_mode == "LangGraph":
+                        col_extra1, col_extra2 = st.columns(2)
+                        with col_extra1:
+                            rouge_l = pipeline_result.get("quality_rougeL", None)
+                            if rouge_l is not None:
+                                st.metric("ROUGE-L", f"{rouge_l:.3f}", help="ROUGE-L measures longest-common-subsequence overlap between notes and summary (0-1).")
+                            else:
+                                st.metric("ROUGE-L", "N/A", help="ROUGE-L is not available for this pipeline")
+                        with col_extra2:
+                            loops = int(pipeline_result.get("critic_loops", 0) or 0)
+                            st.metric("Critic Loops", str(loops), help="How many times LangGraph routed back to the Summarizer due to low critic score.")
+
+                    quant_label = pipeline_result.get("quant_signal_label")
+                    if not quant_label:
+                        quant_info = detect_quantitative_signal(analysis_context)
+                        quant_label = quant_info.get("label")
+                    metrics_count = pipeline_result.get("extracted_metrics_count", None)
+                    recovery_used = pipeline_result.get("recovery_attempted", False)
+                    quant_trace = quant_label or "not evaluated"
+                    if metrics_count is not None:
+                        quant_trace = f"{quant_trace} (reader metrics: {metrics_count})"
+                    if recovery_used:
+                        quant_trace = quant_trace + " – recovery path used"
+
+                    execution_trace = pipeline_result.get("execution_trace", []) or []
+                    trace_set = {str(x).lower() for x in execution_trace if x}
+                    agent_lines = []
+                    for key, label in (
+                        ("reader", "Reader"),
+                        ("results_extractor", "Results Extractor"),
+                        ("summarizer", "Summarizer"),
+                        ("critic", "Critic"),
+                        ("integrator", "Integrator"),
+                    ):
+                        agent_lines.append(f"{'✅' if key in trace_set else '⬜'} {label}")
+
+                    with st.expander("Execution Trace", expanded=True):
+                        st.markdown("\n".join(f"- {line}" for line in agent_lines))
+                        st.markdown(f"🔎 Quantitative signal: **{quant_trace}**")
+                        if pipeline_mode == "LangGraph":
+                            looped = "YES" if int(pipeline_result.get("critic_loops", 0) or 0) > 0 else "NO"
+                            routing = pipeline_result.get("routing_trace", []) or []
+                            branch = (routing[-1] if routing else "n/a").upper()
+                            st.markdown(f"🔁 LangGraph looped: **{looped}**")
+                            st.markdown(f"🧭 LangGraph branch: **{branch}**")
+                        translator_note = pipeline_result.get("translator_note") or ""
+                        if pipeline_result.get("summary_translated", "").startswith("Translator skipped"):
+                            translator_note = pipeline_result.get("summary_translated")
+                        if translator_note:
+                            st.markdown(f"🌐 {translator_note}")
+                        keyword_note = pipeline_result.get("keyword_note") or ""
+                        if keyword_note or (pipeline_result.get("keywords", "").startswith("Keywords: none")):
+                            keyword_msg = pipeline_result.get("keywords") if pipeline_result.get("keywords") else "Keywords: none (fallback used)"
+                            st.markdown(f"🏷️ {keyword_msg}")
                     
                     # Meta Summary
                     if pipeline_result.get("meta"):
                         st.markdown("### Meta Summary")
                         st.info(pipeline_result.get("meta"))
-                    
+                        confidence_line = pipeline_result.get("confidence") or extract_confidence_line(pipeline_result.get("meta", ""))
+                        if confidence_line:
+                            st.caption(confidence_line)
+                        else:
+                            st.caption("Confidence: not provided")
+
                     # Summary
                     if pipeline_result.get("summary"):
                         st.markdown("### Summary")
@@ -282,6 +433,7 @@ with tab_analyse:
                     st.markdown("### Timing")
                     times = {
                         "Reader": pipeline_result.get('reader_s', 0),
+                        "Results Extractor": pipeline_result.get('results_extractor_s', 0),
                         "Summarizer": pipeline_result.get('summarizer_s', 0),
                         "Critic": pipeline_result.get('critic_s', 0),
                         "Integrator": pipeline_result.get('integrator_s', 0),
@@ -430,6 +582,11 @@ with tab_vergleich:
                         st.warning("DSPy not installed. Install `dspy-ai` and `litellm` for full functionality.")
                     if errors.get(label):
                         st.error(f"Error: {errors[label]}")
+
+                    execution_trace = res.get("execution_trace", []) or []
+                    if execution_trace:
+                        with st.expander("Execution Trace", expanded=False):
+                            st.markdown("\n".join(f"- {t}" for t in execution_trace))
                     
                     # Graph for LangGraph
                     if label == "LangGraph":
@@ -547,28 +704,3 @@ with tab_teleprompt:
                                 st.text(res.get("structured", ""))
                             with st.expander("Critic"):
                                 st.text(res.get("critic", ""))
-
-# === TELEMETRY ===
-with st.expander("Telemetry (CSV)", expanded=False):
-    telemetry_path = "telemetry.csv"
-    if not os.path.exists(telemetry_path):
-        st.caption("No telemetry.csv found.")
-    else:
-        try:
-            telemetry_df = pd.read_csv(telemetry_path)
-            st.caption(f"Showing last {min(len(telemetry_df), 200)} entries.")
-            st.dataframe(telemetry_df.tail(200), use_container_width=True)
-            if {"engine", "latency_s"} <= set(telemetry_df.columns):
-                subset = telemetry_df[["engine", "latency_s"]].reset_index().rename(columns={"index": "run"})
-                line = (
-                    alt.Chart(subset.tail(200))
-                    .mark_line(point=True)
-                    .encode(
-                        x=alt.X("run:Q", title="Run"),
-                        y=alt.Y("latency_s:Q", title="Runtime (s)"),
-                        color="engine:N",
-                    )
-                )
-                st.altair_chart(line, use_container_width=True)
-        except Exception as e:
-            st.error(f"Could not load telemetry: {e}")

@@ -13,3 +13,5 @@ pdfplumber==0.11.0
 
 dspy-ai>=2.4.0
 litellm>=1.45.0
+rouge-score>=0.1.2
+urllib3<2

@@ -7,13 +7,19 @@ from langchain_core.prompts import ChatPromptTemplate
 from llm import llm
 
 INTEGRATOR_PROMPT = ChatPromptTemplate.from_template(
-    "Create an executive Meta Summary by fusing SUMMARY with the reviewer signal (CRITIC), "
-    "grounded strictly in NOTES. Do not invent metrics or citations.\n\n"
-    "Summarize the scientific contribution, novelty, and limitations based on the critic feedback."
-    "Output:\n"
+    "Create an executive Meta Summary by fusing SUMMARY with the reviewer signal (CRITIC), grounded strictly in NOTES. "
+    "Do not invent facts, metrics, numbers, or citations.\n\n"
+    "Start with a Title line:\n"
+    "Title: <copy verbatim from NOTES Title; if NOTES Title is 'not reported', write 'not reported'>\n\n"
+    "Then output:\n"
     "1) Five bullets with **bold labels**: Objective, Method, Results, Limitations, Takeaways\n"
     "2) Two open technical questions\n"
-    "3) A one-line Confidence (High/Medium/Low) based on rubric: High if all ≥4; Medium if any 3; Low if any ≤2.\n\n"
+    "3) A one-line Confidence (High/Medium/Low) based on rubric: High if all ≥4; Medium if any 3; Low if any ≤2. Mention missing/weak numeric evidence if relevant. "
+    "Confidence MUST be formatted exactly as: Confidence: <High/Medium/Low> - <one short reason>.\n\n"
+    "STRICT RESULTS RULE:\n"
+    "- If NOTES Results contains quantitative metrics/outcomes, Results MUST include at least one (preferably two) concrete numeric outcomes with context, copied from NOTES (or SUMMARY if it matches NOTES) without changing the numbers.\n"
+    "- If NOTES Results contains the exact sentence 'No quantitative metrics reported in provided text.', then write Results: No quantitative metrics reported in provided text. and do not include any performance numbers anywhere in the Meta Summary.\n"
+    "- Do not add years, section numbers, paper IDs, or other irrelevant numbers.\n\n"
     "NOTES:\n{notes}\n\nSUMMARY:\n{summary}\n\nCRITIC:\n{critic}"
 )
 

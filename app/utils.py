@@ -281,3 +281,113 @@ def preview_sections(raw_text: str, config: dict) -> Dict[str, int]:
     _, usage_statistics = _select_sections(detected_sections, preferred_sections, section_budget)
     
     return usage_statistics
+
+
+# ============================================================================
+# Quantitative Signal Detection & Confidence Parsing
+# ============================================================================
+
+_METRIC_KEYWORDS = [
+    "table", "%", "p=", "p<", "±", "≈",
+    "accuracy", "f1", "rouge", "bleu", "em", "auc"
+]
+
+
+def _is_plausible_metric_number(number_text: str) -> bool:
+    """Heuristik: filtert offensichtliche Jahreszahlen/Seitenzahlen heraus."""
+    cleaned = re.sub(r"[^\d]", "", number_text or "")
+    if not cleaned:
+        return False
+    if len(cleaned) == 4 and 1800 <= int(cleaned) <= 2100:
+        return False
+    return True
+
+
+def detect_quantitative_signal(text: str) -> Dict[str, object]:
+    """
+    Heuristisch erkennen, ob der INPUT TEXT quantitative Metriken enthalten könnte.
+    
+    Returns dict with:
+    - signal: "YES" | "MAYBE" | "NO"
+    - label: human readable label
+    - keyword_hits: list of matched keywords
+    - number_samples: list of numeric snippets
+    """
+    if not text or not text.strip():
+        return {"signal": "NO", "label": "NO (no quantitative signal detected)", "keyword_hits": [], "number_samples": []}
+    
+    lowered = text.lower()
+    keyword_hits: List[str] = []
+    for kw in _METRIC_KEYWORDS:
+        if kw == "%":
+            if "%" in text:
+                keyword_hits.append("%")
+        elif re.search(re.escape(kw), lowered):
+            keyword_hits.append(kw)
+    
+    number_samples: List[str] = []
+    number_pattern = re.compile(r"\d+(?:[.,]\d+)?(?:\s*[±≈]\s*\d+)?(?:\s*%|(?:\s*(?:p=|p<)\s*\d*[.,]?\d+))?", re.I)
+    for match in number_pattern.finditer(text):
+        snippet_start = max(0, match.start() - 20)
+        snippet_end = min(len(text), match.end() + 20)
+        snippet = text[snippet_start:snippet_end].strip()
+        if _is_plausible_metric_number(match.group(0)):
+            number_samples.append(snippet)
+            if len(number_samples) >= 6:
+                break
+    
+    # Additional check: numbers near metric keywords within a short window
+    context_hits = 0
+    for sample in number_samples:
+        if re.search(r"(accuracy|f1|rouge|bleu|em|auc|precision|recall|score|table)", sample, re.I):
+            context_hits += 1
+    
+    if number_samples or context_hits:
+        label = "YES (numbers detected)"
+        signal = "YES"
+    elif keyword_hits:
+        label = "MAYBE (tables/metric keywords detected)"
+        signal = "MAYBE"
+    else:
+        label = "NO (no quantitative signal detected)"
+        signal = "NO"
+    
+    return {
+        "signal": signal,
+        "label": label,
+        "keyword_hits": keyword_hits,
+        "number_samples": number_samples,
+    }
+
+
+def _extract_results_block(notes_text: str) -> str:
+    """Extrahiert den Results-Block aus Notes (beste Schätzung, fallback = kompletter Text)."""
+    if not notes_text:
+        return ""
+    match = re.search(r"Results:\s*(.*?)(?:\n[A-Z][A-Za-z/ ]+:|\Z)", notes_text, flags=re.S)
+    if match:
+        return match.group(1).strip()
+    return notes_text
+
+
+def count_numeric_results(notes_text: str) -> int:
+    """Zählt Zeilen im Results-Block, die plausible metrische Zahlen enthalten."""
+    results_block = _extract_results_block(notes_text)
+    if not results_block:
+        return 0
+    count = 0
+    for line in results_block.splitlines():
+        if not line.strip():
+            continue
+        info = detect_quantitative_signal(line)
+        if info.get("signal") == "YES":
+            count += 1
+    return count
+
+
+def extract_confidence_line(meta_text: str) -> str:
+    """Parst eine Confidence-Zeile aus der Meta Summary."""
+    if not meta_text:
+        return ""
+    match = re.search(r"Confidence\s*:\s*([^\n]+)", meta_text, re.I)
+    return match.group(0).strip() if match else ""

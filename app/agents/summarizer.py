@@ -7,10 +7,22 @@ from langchain_core.prompts import ChatPromptTemplate
 from llm import llm
 
 SUMMARIZER_PROMPT = ChatPromptTemplate.from_template(
-    "Produce a concise scientific summary (200-300 words) of the paper described in the NOTES. "
-    "Cover, in this order: Objective -> Method (what/how) -> Results (numbers if present; otherwise say 'not reported') "
-    "-> Limitations -> 3-5 Practical Takeaways (bulleted). "
-    "Avoid speculation or citations. Do NOT invent metrics; if NOTES have no numbers, write 'not reported'.\n\n"
+    "Produce a concise scientific summary of the paper described in the NOTES, grounded strictly in the NOTES. "
+    "Do NOT invent facts, numbers, datasets, or metrics. Do NOT include citations.\n\n"
+    "Output format (use these labels in this order):\n"
+    "Title: <copy verbatim from NOTES Title; if NOTES Title is 'not reported', write 'not reported'>\n"
+    "Objective: <1-2 sentences>\n"
+    "Method: <brief: what/how>\n"
+    "Results: <EITHER include at least one (preferably two) concrete numeric outcomes copied from NOTES Results with context OR write exactly 'No quantitative metrics reported in provided text.'>\n"
+    "Limitations: <brief>\n"
+    "Practical Takeaways:\n"
+    "- <bullet>\n"
+    "- <bullet>\n"
+    "- <bullet>\n\n"
+    "STRICT RESULTS RULE:\n"
+    "- Only include numbers in the SUMMARY if (and only if) the NOTES section 'Results' contains explicit quantitative metrics/outcomes.\n"
+    "- If NOTES Results contains the exact sentence 'No quantitative metrics reported in provided text.', then write Results: No quantitative metrics reported in provided text. and do not include any numbers anywhere in the summary.\n"
+    "- When including numbers, copy at least one (preferably two) Results bullets verbatim (numbers and metric names), preserving the values exactly; do not add any other numbers (avoid years, section numbers, paper IDs, counts, or hyperparameters).\n\n"
     "NOTES:\n{notes}"
 )
 

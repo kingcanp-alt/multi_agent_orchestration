@@ -14,20 +14,98 @@ Wir orchestrieren denselben Workflow mit drei Frameworks:
 **LangChain (linear)**
 ```mermaid
 flowchart LR
-  R[Reader] --> S[Summarizer] --> C[Critic] --> I[Integrator]
+  classDef io fill:#e0f2f1,stroke:#00695c,stroke-width:1px;
+  classDef agent fill:#d1c4e9,stroke:#512da8,stroke-width:1px;
+  classDef review fill:#fff8e1,stroke:#f57f17,stroke-width:1px;
+
+  Input([Input\nText / PDF]):::io
+  Reader([Reader\nNotes]):::agent
+  Summarizer([Summarizer\nSummary]):::agent
+  Critic([Critic\nScore & Feedback]):::review
+  Integrator([Integrator\nMeta Summary]):::agent
+  Output([Output Bundle]):::io
+
+  Input --> Reader --> Summarizer --> Critic --> Integrator --> Output
 ```
+
+**Legende**
+- Light blue Kästen markieren Input/Output-Daten.
+- Lila Kästen sind die Verarbeitungsschritte (Lesen, Zusammenfassen, Integration).
+- Gelbe Kästen zeigen die Bewertungs-/Feedback-Schritte.
+
+**Knoten-Guide**
+- `Reader`: Extrahiert strukturierte Notizen (z. B. „Key contributions“, „Methodology“).
+- `Summarizer`: Verdichtet Notizen zu einer fokussierten Zusammenfassung (z. B. Ziel: „Result-focused, 80-150 Wörter“).
+- `Critic`: Vergibt einen Score + Empfehlungen; liefert z. B. `critic`, `critic_loops`.
+- `Integrator`: Fasst alles in `meta` zusammen und erzeugt die finale Ausgabe.
+
+**Beispiel-Output (LangChain)**
+- `notes`: „We propose a multi-agent orchestrator that splits reading, summarizing, criticising and integrating.“
+- `summary`: „A multi-agent Paper Analyzer orchestrates Reader→Summarizer→Critic→Integrator to ensure coverage and coherence.“
+- `critic`: „Score 0.82; expand the discussion on evaluation metrics.“
+- `meta`: „Meta summary + runtime stats; `latency_s`, `reader_s`.“
+
+---
 
 **LangGraph (Graph + Conditional Flow)**
 ```mermaid
 flowchart LR
-  R[Reader] --> S[Summarizer] --> C[Critic]
-  C -- "ok" --> I[Integrator]
-  C -- "low score / rework" --> S
+  classDef io fill:#e0f2f1,stroke:#00695c,stroke-width:1px;
+  classDef prep fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px;
+  classDef agent fill:#d1c4e9,stroke:#512da8,stroke-width:1px;
+  classDef critic fill:#fff3e0,stroke:#ef6c00,stroke-width:1px;
+  classDef translate fill:#fde68a,stroke:#c97700,stroke-width:1px;
+  classDef keyword fill:#fef9c3,stroke:#b27c00,stroke-width:1px;
+  classDef output fill:#e0f2f1,stroke:#00695c,stroke-width:1px;
+
+  Input([Input\nRaw text / PDF]):::io
+  Retriever([Retriever\nPreprocessing]):::prep
+  Reader([Reader\nNotes]):::agent
+  Summ([Summarizer\nSummary]):::agent
+  Translator([Translator\n(DE ↔ EN) preview]):::translate
+  Keyword([Keyword\nExtraction]):::keyword
+  Critic([Critic\nScore & Feedback]):::critic
+  Quality([Quality\nF1 Evaluation]):::critic
+  Judge([Judge\nLLM rating 0-5]):::critic
+  Aggregator([Aggregator\nJudge/Quality/Critic]):::agent
+  Integrator([Integrator\nMeta Summary]):::agent
+  Output([Output bundle\n(notes, summary, critic, meta, graph_dot)]):::output
+
+  Input --> Retriever --> Reader --> Summ --> Translator --> Keyword --> Critic
+  Critic --> Quality
+  Critic -- "short/low detail" ==> Judge
+  Critic -.-> Summ [label="rework (low critic)"]
+  Quality --> Judge --> Aggregator --> Integrator --> Output
+  Judge --> Aggregator
 ```
-Hinweis: Im Projekt enthält der LangGraph-Workflow zusätzlich Translator-/Keyword-/Quality-/Judge-/Aggregator-Nodes (siehe „LangGraph Highlights“ und `app/workflows/langgraph_pipeline.py`).
+
+**Legende**
+- Hellgrüne Kästen markieren Vorverarbeitung.
+- Gelbe Kästen weisen auf Translator/Keyword-Tasks hin, die den Kontext für Judge/Aggregator anreichern.
+- Orange Kästen zeigen Conditional Flows mit Entscheidungen und Scores.
+- Die gestrichelte Kante signalisiert eine Schleife aus dem Critic zurück zum Summarizer.
+
+**Knoten-Insights**
+- `Retriever`: Normalisiert Text, baut `analysis_context`, füttert Reader.
+- `Translator`: Erzeugt deutsch/englische Varianten (Teleprompt-geeignet) und liefert `summary_translated`.
+- `Keyword`: Gibt wichtige Schlagwörter aus; `keywords`-Feld erscheint in der UI.
+- `Quality`/`Judge`: Kombinieren F1/LLM-Rating; `judge` wird für Aggregation genutzt.
+- `Aggregator`: Mittelt Judge, Quality, Critic und setzt `judge_aggregate`.
+- `graph_dot`: Visualisierung der aktuellen Ausführung (nützlich im Workshop).
+
+**Beispiel-Outputs (LangGraph)**
+- `summary_translated`: „Wir präsentieren eine mehrstufige Orchestrierung…“ (Teleprompt-Vorschau).
+- `keywords`: `["multi-agent", "evaluation", "teleprompting"]`
+- `critic_score`: 0.78, `judge_score`: 4.2/5, `judge_aggregate`: 0.80
+- `graph_dot`: dynamisch generierter DOT-Code für die Visualisierung.
+
+---
 
 **DSPy (Signatures statt explizitem Prompt)**
-- Statt pro Agent einen Prompt-String zu definieren, nutzt DSPy `dspy.Signature` (Inputs/Outputs + Constraints) und generiert Prompts daraus automatisch (`app/workflows/dspy_pipeline.py`).
+- Statt pro Agent einen Prompt-String zu definieren, nutzt DSPy `dspy.Signature` (Inputs/Outputs + Constraints) und generiert Prompts automatisch (`app/workflows/dspy_pipeline.py`).
+- Beim optionalen Teleprompting baut der BootstrapFewShot-Optimizer auf `dev-set/dev.jsonl` mehrere Kandidaten auf, die verschiedene `target_length`- und `prompt_focus`-Tags abdecken.
+- Das Ergebnis enthält die Felder `teleprompt_gain`, `teleprompt_choice`, `teleprompt_dev_examples`, `teleprompt_target_lengths`, `teleprompt_prompt_focus` und `teleprompt_summary` – plus der originale `meta`-Text wird um die Teleprompt-Zusammenfassung ergänzt.
+- Beispiel-Output: `meta` endet mit „Teleprompt gain +0.072 … length=['short','medium'] … focus=['Method','Results']“, `summary` bleibt thematisch konsistent, und die Teleprompt-Metriken zeigen, wie sich die Zusammenfassung gegenüber der Basis-Signatur verbessern ließ.
 
 ### Framework-Unterschiede (warum 3 Paradigmen?)
 
@@ -106,7 +184,9 @@ Mehr Details zur Einrichtung stehen in `docs/participants/START_HIER.md`.
 ---
 
 ## Evaluierung
-- `app/eval_runner.py` wertet `dev-set/dev.jsonl` über alle Pipelines aus und berechnet ein einfaches unigram-F1
+- `app/eval_runner.py` wertet `dev-set/dev.jsonl` über alle Pipelines aus und liefert ein Set an Vergleichsmessgrößen.
+  - Neben dem bisherigen Unigram-F1 wird zusätzlich ROUGE-L (LCS-basiert) ermittelt.
+  - Damit lässt sich zeigen: bessere Struktur/Abdeckung ≠ automatisch bessere semantische Übereinstimmung.
 
 ---
 

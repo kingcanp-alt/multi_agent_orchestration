@@ -143,7 +143,7 @@ Erkläre: "Der Hauptunterschied ist, dass LangGraph die Struktur explizit macht.
 
 Teilnehmer vergleichen auch: Quality- und Judge-Nodes gibt es nur in LangGraph. Warum? In LangChain müsste man sie manuell einfügen. In LangGraph sind sie einfach Nodes im Graph.
 
-Optional: Teilnehmer nutzen "Alle Pipelines vergleichen" für Metriken-Vergleich.
+Optional: Teilnehmer nutzen "Alle Pipelines vergleichen" für Metriken-Vergleich. Dabei geht es nicht nur um Unigram-F1, sondern um das neue ROUGE-1/ROUGE-2/ROUGE-L-Reporting plus Coverage- und Coherence-Werte – das macht Unterschiede zwischen Prompt-Varianten und Conditional Flows nachvollziehbar.
 
 ---
 
@@ -175,7 +175,7 @@ Warnung vorab: "Achtung: Ausführung dauert 1-2 Minuten. Teleprompting optimiert
 
 Teilnehmer aktivieren "DSPy optimieren", prüfen den Dev-Set Pfad (`dev-set/dev.jsonl`) und klicken auf "DSPy Teleprompt Gain". 
 
-Ergänzend erwähnen: Das Dev-Set wurde auf 15 Beispiele erweitert, die verschiedene `target_length`-Tags (short/medium/long) und `prompt_focus`-Tags (Results/Method/Conclusion) enthalten. Dadurch sehen die Teilnehmer live, wie DSPy die Prompt-Strategie anpasst, welche Beispieltypen schneller trainieren und wo der Latenz-gegen-Qualität-Trade-off entsteht.
+Ergänzend erwähnen: Das Dev-Set wurde auf 15 Beispiele erweitert, die verschiedene `target_length`-Tags (short/medium/long) und `prompt_focus`-Tags (Results/Method/Conclusion) enthalten. Dadurch sehen die Teilnehmer live, wie DSPy die Prompt-Strategie anpasst, welche Beispieltypen schneller trainieren und wo der Latenz-gegen-Qualität-Trade-off entsteht. Die Teleprompt-Metriken (`teleprompt_target_lengths`, `teleprompt_prompt_focus`, `teleprompt_gain`, `teleprompt_choice`) erscheinen im Ergebnis und in der erweiterten `meta`-Zusammenfassung.
 
 Während der Wartezeit (2 Minuten) erkläre den Prozess: "DSPy testet verschiedene Prompts. Es nutzt das Dev-Set (Trainingsdaten mit Beispielen). Es evaluiert jeden Prompt gegen die Beispiele und wählt die optimale Variante. Dies ist Few-Shot-Bootstrapping - das System lernt aus Beispielen und optimiert sich selbst."
 
@@ -183,7 +183,7 @@ Falls Code-Zugriff vorhanden: Zeige, wo Teleprompting konfiguriert ist. Suche na
 
 Wichtig: Nutze die Wartezeit produktiv. Erkläre, was passiert. Frage, ob Teilnehmer Fragen haben.
 
-Nach Teleprompting: "Analysiert die Vergleichstabelle. Wie viel besser ist Teleprompt?" Typischerweise: positiver F1 Gain, erhöhte Latenz (klassischer Trade-off). Die 15 Dev-Beispiele spiegeln unterschiedliche Ziel-Längen und Fokus-Schwerpunkte, sodass sichtbar wird, wie Teleprompting seine Prompts je nach Beispielart optimiert.
+Nach Teleprompting: "Analysiert die Vergleichstabelle. Wie viel besser ist Teleprompt?" Typischerweise: positiver F1 Gain, erhöhte Latenz (klassischer Trade-off). Die 15 Dev-Beispiele spiegeln unterschiedliche Ziel-Längen (`target_length`) und Fokus-Schwerpunkte (`prompt_focus`), sodass sichtbar wird, wie Teleprompting seine Prompts je nach Beispielart optimiert; `meta` enthält zusätzlich `teleprompt_gain`, `teleprompt_choice`, `teleprompt_target_lengths` und `teleprompt_prompt_focus`.
 
 Teilnehmer vergleichen Base vs. Teleprompt Outputs in den Tab-Reitern. Was ist besser? Meist: bessere Coverage, bessere Kohärenz.
 

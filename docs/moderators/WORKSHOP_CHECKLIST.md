@@ -160,7 +160,7 @@ Der Workshop war erfolgreich, wenn:
 - Teilnehmer können Unterschiede zwischen Frameworks erklären
 - Alle drei Pipelines wurden live demonstriert
 - Teilnehmer haben mindestens eine Pipeline selbst getestet
-- Vergleichs-Metriken wurden diskutiert
+- Vergleichs-Metriken (ROUGE-1/ROUGE-2/ROUGE-L plus Coverage/Coherence) wurden diskutiert
 - Q&A-Runde hatte relevante Fragen
 
 ---

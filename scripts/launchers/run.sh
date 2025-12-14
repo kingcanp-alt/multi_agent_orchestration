@@ -2,11 +2,27 @@
 # Multi-Agent Orchestration - Runner (macOS/Linux)
 
 # Wechsle ins Projekt-Root (Startskripte liegen nun in scripts/launchers/)
-cd "$(dirname "$0")/.."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Wechsle ins Projekt-Root
+cd "$PROJECT_ROOT" || {
+    echo "FEHLER: Konnte nicht ins Projekt-Root wechseln!"
+    exit 1
+}
+
+# Prüfe, ob wir im richtigen Verzeichnis sind
+if [ ! -f "requirements.txt" ]; then
+    echo "FEHLER: requirements.txt nicht gefunden!"
+    echo "Aktuelles Verzeichnis: $(pwd)"
+    echo "Erwartetes Verzeichnis sollte requirements.txt enthalten."
+    exit 1
+fi
 
 echo "========================================"
 echo "Multi-Agent Orchestration Workshop"
 echo "========================================"
+echo "Projekt-Verzeichnis: $PROJECT_ROOT"
 echo ""
 
 # Prüfe Python
@@ -66,6 +82,11 @@ fi
 
 # Upgrade pip und installiere Dependencies
 echo "[3/4] Installiere Abhängigkeiten (dauert 1-2 Minuten)..."
+SITE_PACKAGES="$($PYTHON_CMD -c 'import site; print(site.getsitepackages()[0])' 2>/dev/null || true)"
+if [ -n "$SITE_PACKAGES" ]; then
+    # pip kann nach abgebrochenen Installs eine defekte "~penai*" Distribution warnen; cleanen wir vorab.
+    rm -rf "$SITE_PACKAGES"/~penai* 2>/dev/null || true
+fi
 $PYTHON_CMD -m pip install --upgrade pip --quiet > /dev/null 2>&1
 $PYTHON_CMD -m pip install -r requirements.txt --quiet
 if [ $? -ne 0 ]; then

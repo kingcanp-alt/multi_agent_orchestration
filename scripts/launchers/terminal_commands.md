@@ -12,6 +12,9 @@ pip install -r requirements.txt
 python -m streamlit run app/app.py
 ```
 
+If you see `urllib3` / `NotOpenSSLWarning` on macOS (LibreSSL), run `pip install -U "urllib3<2"` and re-run Streamlit.
+If you see `WARNING: Ignoring invalid distribution -penai`, delete leftover folders in your venv site-packages (e.g. `rm -rf venv/lib/python*/site-packages/~penai*`) and re-run `pip install -r requirements.txt`.
+
 ## Windows (PowerShell)
 ```powershell
 cd C:\path\to\multi_agent_orchestration

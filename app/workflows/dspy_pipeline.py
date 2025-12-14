@@ -5,6 +5,8 @@ from typing import Dict, Any, List, Optional, Tuple
 from time import perf_counter
 import json, os, re
 
+from utils import detect_quantitative_signal, count_numeric_results, extract_confidence_line
+
 # Optional: unsere bestehende CSV-Telemetrie nutzen
 try:
     from telemetry import log_row
@@ -41,6 +43,7 @@ def _lean_fallback(msg: str) -> Dict[str, Any]:
         "latency_s": 0.0,
         "graph_dot": None,
         "dspy_available": DSPY_READY,
+        "execution_trace": [],
     }
 
 
@@ -89,23 +92,24 @@ else:
         - <dataset or setup>
         - <tools/frameworks>
         Results:
-        - <metric: value>
-        - <comparison>
+        <EITHER list quantitative outcomes as bullets OR, if none exist anywhere in the provided TEXT, write exactly this single sentence on its own line: No quantitative metrics reported in provided text.>
         Limitations: <text or 'not reported'>
         Takeaways:
         - <bullet>
         - <bullet>
         - <bullet>
-        If tables or metrics are present, extract numeric values. If no numbers exist, write 'not reported'.
+        If the text contains the word 'Table', you MUST extract at least 2 numeric entries from the nearest table region.
+        If tables or metrics are present, extract numeric values exactly as written. If no numbers exist, write exactly: No quantitative metrics reported in provided text.
         NEVER guess or interpolate metrics."""
         TEXT: str = dspy.InputField(desc="The scientific paper text to extract notes from")
         NOTES: str = dspy.OutputField(desc="Structured scientific notes following the schema above, no JSON, no extra prose")
 
     class Summarize(dspy.Signature):
         """Produce a concise scientific summary (200-300 words) from NOTES.
-        Cover in this order: Objective -> Method (what/how) -> Results (numbers if present; otherwise say 'not reported')
+        Cover in this order: Objective -> Method (what/how) -> Results (numbers if present; otherwise write exactly 'No quantitative metrics reported in provided text.')
         -> Limitations -> 3-5 Practical Takeaways (bulleted).
-        Avoid speculation or citations. Do NOT invent metrics; if NOTES have no numbers, write 'not reported'."""
+        Avoid speculation or citations. Do NOT invent metrics; if NOTES Results contains the exact sentence
+        'No quantitative metrics reported in provided text.', then the summary Results must use that exact sentence and contain no numbers."""
         NOTES: str = dspy.InputField(desc="Structured scientific notes")
         SUMMARY: str = dspy.OutputField(desc="200-300 word summary covering objective, method, results, limitations, and takeaways")
 
@@ -130,7 +134,11 @@ else:
         Do not invent metrics or citations. Provide a concise meta-summary covering:
         Objective (one sentence), Method (one sentence), Results (one sentence), Limitations (one sentence),
         Takeaways (3 bullets), Open Questions (2 questions), and Confidence level (High/Medium/Low).
-        Confidence: High if all rubric scores ≥4; Medium if any score is 3; Low if any score ≤2."""
+        Confidence: High if all rubric scores ≥4; Medium if any score is 3; Low if any score ≤2.
+
+        STRICT RESULTS RULE:
+        - If NOTES Results contains quantitative metrics/outcomes, Results MUST include at least one (preferably two) concrete numeric outcomes with context, copied from NOTES without changing the numbers.
+        - If NOTES Results contains the exact sentence 'No quantitative metrics reported in provided text.', then Results must be exactly: No quantitative metrics reported in provided text. (and contain no numbers)."""
         NOTES: str = dspy.InputField(desc="Original structured notes (ground truth)")
         SUMMARY: str = dspy.InputField(desc="Summary to integrate")
         CRITIC: str = dspy.InputField(desc="Critique feedback with rubric scores")
@@ -230,10 +238,10 @@ else:
         rec = len(ps & gs) / len(gs)
         return 0.0 if (prec + rec) == 0 else (2 * prec * rec) / (prec + rec)
 
-    def _load_devset(path: str) -> List[Tuple[str, str]]:
+    def _load_devset(path: str) -> List[Dict[str, str]]:
         if not os.path.exists(path):
             return []
-        pairs: List[Tuple[str, str]] = []
+        examples: List[Dict[str, str]] = []
         with open(path, "r", encoding="utf-8") as f:
             for line in f:
                 try:
@@ -241,10 +249,15 @@ else:
                     text = obj.get("text", "")
                     gold = obj.get("target_summary", "")
                     if text and gold:
-                        pairs.append((text, gold))
+                        examples.append({
+                            "text": text,
+                            "target_summary": gold,
+                            "target_length": obj.get("target_length", "medium"),
+                            "prompt_focus": obj.get("prompt_focus", "Results"),
+                        })
                 except Exception:
                     continue
-        return pairs
+        return examples
 
     def _teleprompt_if_requested(pipeline: PaperPipeline, cfg: Dict[str, Any]):
         # aktiviere mit cfg["dspy_teleprompt"]=True
@@ -278,14 +291,54 @@ else:
         # Wir optimieren hier nur die Summarizer-Stage (als Beispiel)
         # Trainset: Liste von dspy.Example oder Dict mit NOTES und SUMMARY
         trainset = []
-        for (text, gold) in dev:
+        note_gold_pairs: List[Tuple[str, str]] = []
+        target_lengths: set[str] = set()
+        prompt_focuses: set[str] = set()
+        for entry in dev:
+            text = entry["text"]
+            gold = entry["target_summary"]
             notes = pipeline.reader(text).NOTES
             trainset.append(dspy.Example(NOTES=notes, SUMMARY=gold).with_inputs("NOTES"))
-        
-        if trainset:
-            # compile() gibt eine optimierte Version zurück - diese muss verwendet werden!
-            optimized_summarizer = tp.compile(pipeline.summarizer, trainset=trainset)
-            pipeline.summarizer = optimized_summarizer
+            note_gold_pairs.append((notes, gold))
+            target_lengths.add(entry.get("target_length") or "medium")
+            prompt_focuses.add(entry.get("prompt_focus") or "Results")
+
+        if not trainset:
+            return
+
+        def _score_module(module):
+            scores = []
+            for notes, gold in note_gold_pairs:
+                pred = module(NOTES=notes)
+                scores.append(_metric(gold, pred))
+            return sum(scores) / len(scores) if scores else 0.0
+
+        base_score = _score_module(pipeline.summarizer)
+
+        # compile() gibt eine optimierte Version zurück - diese muss verwendet werden!
+        optimized_summarizer = tp.compile(pipeline.summarizer, trainset=trainset)
+        pipeline.summarizer = optimized_summarizer
+
+        optimized_score = _score_module(pipeline.summarizer)
+        gain = optimized_score - base_score
+        choice = f"BootstrapFewShot(demos={len(trainset)})"
+
+        summary_line = (
+            f"Teleprompt gain {gain:+.3f} (baseline {base_score:.3f} → optimized {optimized_score:.3f}); "
+            f"{len(trainset)} dev examples; lengths={sorted(target_lengths)}; focus={sorted(prompt_focuses)}."
+        )
+
+        return {
+            "gain": round(gain, 3),
+            "base_score": round(base_score, 3),
+            "optimized_score": round(optimized_score, 3),
+            "choice": choice,
+            "summary": summary_line,
+            "examples": len(trainset),
+            "target_lengths": sorted(target_lengths),
+            "prompt_focus": sorted(prompt_focuses),
+        }
+
 
     # ---------------- Public API ----------------
     def run_pipeline(input_text: str, cfg: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -293,11 +346,14 @@ else:
         _configure_dspy(cfg)
 
         pipe = PaperPipeline()
-        _teleprompt_if_requested(pipe, cfg)
+        teleprompt_info = _teleprompt_if_requested(pipe, cfg)
 
         t0 = perf_counter()
         out = pipe(input_text=input_text)
         t1 = perf_counter()
+        quant_info = detect_quantitative_signal(input_text)
+        metrics_count = count_numeric_results(out.NOTES)
+        confidence_line = extract_confidence_line(out.META)
 
         result = {
             "structured": out.NOTES,
@@ -312,7 +368,26 @@ else:
             "input_chars": len(input_text or ""),
             "graph_dot": None,  # nur LangGraph
             "dspy_available": True,
+            "execution_trace": ["reader", "summarizer", "critic", "integrator"],
+            "quant_signal": quant_info.get("signal", ""),
+            "quant_signal_label": quant_info.get("label", ""),
+            "quant_keyword_hits": quant_info.get("keyword_hits", []),
+            "quant_number_samples": quant_info.get("number_samples", []),
+            "extracted_metrics_count": metrics_count,
+            "confidence": confidence_line,
         }
+        if teleprompt_info:
+            result.update({
+                "teleprompt_gain": teleprompt_info["gain"],
+                "teleprompt_choice": teleprompt_info["choice"],
+                "teleprompt_base_score": teleprompt_info["base_score"],
+                "teleprompt_optimized_score": teleprompt_info["optimized_score"],
+                "teleprompt_dev_examples": teleprompt_info["examples"],
+                "teleprompt_target_lengths": teleprompt_info["target_lengths"],
+                "teleprompt_prompt_focus": teleprompt_info["prompt_focus"],
+                "teleprompt_summary": teleprompt_info["summary"],
+            })
+            result["meta"] = result["meta"] + "\n\n" + teleprompt_info["summary"]
 
         # Telemetrie-CSV (so wie bei LangChain)
         try:
@@ -326,6 +401,9 @@ else:
                 "summarizer_s": result["summarizer_s"],
                 "critic_s": result["critic_s"],
                 "integrator_s": result["integrator_s"],
+                "quant_signal": result.get("quant_signal", ""),
+                "extracted_metrics_count": metrics_count,
+                "confidence": confidence_line,
             })
         except Exception:
             pass
