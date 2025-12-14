@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import TypedDict, Dict, Any, Optional, Callable
 from time import perf_counter
+from datetime import datetime
 import concurrent.futures as cf
 import re
 
@@ -21,6 +22,7 @@ from utils import (
     build_analysis_context,
     truncate_text,
     extract_confidence_line,
+    count_numeric_results,
 )
 
 
@@ -168,7 +170,7 @@ def _critic_post_path(state: PipelineState) -> str:
     _extract_critic_score(state)
     loops = state.get("critic_loops", 0)
     cfg = state.get("_config", {}) or {}
-    max_loops = max(0, int(cfg.get("max_critic_loops", 1)))
+    max_loops = max(0, int(cfg.get("max_critic_loops", 2)))
     
     if state["critic_score"] < 0.5 and loops < max_loops:
         state["critic_loops"] = loops + 1
@@ -309,21 +311,28 @@ def run_pipeline(input_text: str, config: Optional[Dict[str, Any]] = None) -> Di
     input_chars = len(final_state.get("analysis_context") or input_text or "")
     confidence_line = extract_confidence_line(final_state.get("meta", "") or "") or ""
     final_state["confidence"] = confidence_line or final_state.get("confidence", "")
+    metrics_count = count_numeric_results(final_state.get("notes", ""))
     
-    log_row({
-        "engine": "langgraph",
-        "input_chars": input_chars,
-        "summary_len": len(str(final_state.get("summary", ""))),
-        "meta_len": len(str(final_state.get("meta", ""))),
-        "latency_s": total_duration,
-        "reader_s": final_state.get("reader_s", 0.0),
-        "summarizer_s": final_state.get("summarizer_s", 0.0),
-        "critic_s": final_state.get("critic_s", 0.0),
-        "integrator_s": final_state.get("integrator_s", 0.0),
-        "critic_score": final_state.get("critic_score", 0.0),
-        "critic_loops": final_state.get("critic_loops", 0),
-        "confidence": final_state.get("confidence", ""),
-    })
+    if config_dict.get("csv_telemetry", True):
+        log_row({
+            "engine": "langgraph",
+            "model": config_dict.get("model", ""),
+            "max_tokens": config_dict.get("max_tokens", 0),
+            "temperature": config_dict.get("temperature", 0.0),
+            "timestamp": datetime.now().isoformat(),
+            "input_chars": input_chars,
+            "summary_len": len(str(final_state.get("summary", ""))),
+            "meta_len": len(str(final_state.get("meta", ""))),
+            "latency_s": total_duration,
+            "reader_s": final_state.get("reader_s", 0.0),
+            "summarizer_s": final_state.get("summarizer_s", 0.0),
+            "critic_s": final_state.get("critic_s", 0.0),
+            "integrator_s": final_state.get("integrator_s", 0.0),
+            "critic_score": final_state.get("critic_score", 0.0),
+            "critic_loops": final_state.get("critic_loops", 0),
+            "extracted_metrics_count": metrics_count,
+            "confidence": final_state.get("confidence", ""),
+        })
     
     return {
         "structured": final_state.get("notes", ""),

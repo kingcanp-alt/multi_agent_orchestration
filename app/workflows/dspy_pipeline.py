@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Dict, Any, List, Optional, Tuple
 from time import perf_counter
+from datetime import datetime
 import json, os, re
 
 from utils import count_numeric_results, extract_confidence_line
@@ -372,21 +373,26 @@ else:
             })
             result["meta"] = result["meta"] + "\n\n" + teleprompt_info["summary"]
 
-        try:
-            log_row({
-                "engine": "dspy",
-                "input_chars": len(input_text or ""),
-                "summary_len": len(result["summary"]),
-                "meta_len": len(result["meta"]),
-                "latency_s": result["latency_s"],
-                "reader_s": result["reader_s"],
-                "summarizer_s": result["summarizer_s"],
-                "critic_s": result["critic_s"],
-                "integrator_s": result["integrator_s"],
-                "extracted_metrics_count": metrics_count,
-                "confidence": confidence_line,
-            })
-        except Exception:
-            pass
+        if cfg.get("csv_telemetry", True):
+            try:
+                log_row({
+                    "engine": "dspy",
+                    "model": cfg.get("model", ""),
+                    "max_tokens": cfg.get("max_tokens", 0),
+                    "temperature": cfg.get("temperature", 0.0),
+                    "timestamp": datetime.now().isoformat(),
+                    "input_chars": len(input_text or ""),
+                    "summary_len": len(result["summary"]),
+                    "meta_len": len(result["meta"]),
+                    "latency_s": result["latency_s"],
+                    "reader_s": result["reader_s"],
+                    "summarizer_s": result["summarizer_s"],
+                    "critic_s": result["critic_s"],
+                    "integrator_s": result["integrator_s"],
+                    "extracted_metrics_count": metrics_count,
+                    "confidence": confidence_line,
+                })
+            except Exception:
+                pass
 
         return result

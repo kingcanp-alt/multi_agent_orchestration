@@ -16,7 +16,13 @@ from dotenv import load_dotenv
 from pypdf import PdfReader
 
 from workflows.langchain_pipeline import run_pipeline as run_lc
-from workflows.langgraph_pipeline import run_pipeline as run_lg
+try:
+    from workflows.langgraph_pipeline import run_pipeline as run_lg
+    LANGGRAPH_READY = True
+except Exception as e:
+    LANGGRAPH_READY = False
+    def run_lg(*args, **kwargs):
+        raise ImportError(f"LangGraph import failed: {e}")
 from workflows.dspy_pipeline import run_pipeline as run_dspy, DSPY_READY
 from utils import build_analysis_context, extract_confidence_line
 
@@ -164,68 +170,12 @@ with st.sidebar:
     
     show_debug = st.checkbox("Debug Mode", value=False, help="Show detailed error messages and stack traces when errors occur. Useful for troubleshooting.")
     
-    # Telemetry
-    st.markdown("---")
-    st.markdown("### Telemetry")
-    
-    telemetry_path = "telemetry.csv"
-    if not os.path.exists(telemetry_path):
-        st.caption("No telemetry data yet.")
-    else:
-        try:
-            telemetry_df = pd.read_csv(telemetry_path)
-            if len(telemetry_df) > 0:
-                # Show last 5 entries in compact table
-                last_entries = telemetry_df.tail(5).copy()
-                
-                # Prepare columns for display (engine, latency_s, summary_len)
-                display_cols = []
-                if "engine" in last_entries.columns:
-                    display_cols.append("engine")
-                if "latency_s" in last_entries.columns:
-                    display_cols.append("latency_s")
-                if "summary_len" in last_entries.columns:
-                    display_cols.append("summary_len")
-                
-                if display_cols:
-                    # Format the data for better display
-                    display_df = last_entries[display_cols].copy()
-                    if "latency_s" in display_df.columns:
-                        display_df["latency_s"] = display_df["latency_s"].round(2)
-                    if "summary_len" in display_df.columns:
-                        display_df["summary_len"] = display_df["summary_len"].astype(int)
-                    
-                    # Compact table
-                    st.dataframe(
-                        display_df,
-                        use_container_width=True,
-                        hide_index=True,
-                        height=150
-                    )
-                    
-                    # Mini plot for latency over time
-                    if "latency_s" in telemetry_df.columns and "engine" in telemetry_df.columns:
-                        plot_data = telemetry_df.tail(20).copy()
-                        plot_data = plot_data.reset_index()
-                        plot_data["run"] = plot_data.index + 1
-                        
-                        mini_chart = (
-                            alt.Chart(plot_data)
-                            .mark_line(point=True, size=2)
-                            .encode(
-                                x=alt.X("run:Q", title="Run", axis=alt.Axis(labelFontSize=9)),
-                                y=alt.Y("latency_s:Q", title="Latency (s)", axis=alt.Axis(labelFontSize=9)),
-                                color=alt.Color("engine:N", legend=alt.Legend(title="Engine", labelFontSize=8, titleFontSize=9)),
-                            )
-                            .properties(height=120, width=280)
-                        )
-                        st.altair_chart(mini_chart, use_container_width=False)
-                
-                st.caption(f"Last {min(len(telemetry_df), 5)} of {len(telemetry_df)} runs")
-            else:
-                st.caption("No telemetry data yet.")
-        except Exception as e:
-            st.caption(f"Could not load telemetry: {e}")
+    st.markdown("#### LangGraph Settings")
+    max_critic_loops = st.slider(
+        "Max Critic Loops",
+        1, 5, 2,
+        help="Maximum number of times LangGraph can loop back from Critic to Summarizer if quality is low. 2-3 is usually optimal: allows self-correction without excessive retries."
+    )
 
 # Config
 config = {
@@ -237,6 +187,8 @@ config = {
     "debug": bool(show_debug),
     "dspy_teleprompt": use_dspy_teleprompt,
     "dspy_dev_path": dspy_dev_path,
+    "csv_telemetry": True,  # Always enabled, shown in expander below
+    "max_critic_loops": max_critic_loops,
 }
 
 # Main tabs
@@ -272,6 +224,8 @@ with tab_analyse:
         
         if pipeline_mode == "DSPy" and not DSPY_READY:
             st.warning("DSPy not installed. Install `dspy-ai` and `litellm` for full functionality.")
+        if pipeline_mode == "LangGraph" and not LANGGRAPH_READY:
+            st.warning("LangGraph import failed. Check if langgraph is installed.")
     
     st.markdown("---")
     
@@ -476,8 +430,23 @@ with tab_vergleich:
                         status.update(label=f"Running {label}...")
                         results[label] = runner()
                     except Exception as exc:
-                        errors[label] = str(exc)
-                        results[label] = {"meta": f"Error: {exc}"}
+                        import traceback
+                        error_msg = str(exc)
+                        error_trace = traceback.format_exc()
+                        errors[label] = error_msg
+                        results[label] = {
+                            "meta": f"Error: {error_msg}",
+                            "summary": "",
+                            "structured": "",
+                            "critic": "",
+                            "latency_s": 0.0,
+                            "reader_s": 0.0,
+                            "summarizer_s": 0.0,
+                            "critic_s": 0.0,
+                            "integrator_s": 0.0,
+                        }
+                        if show_debug:
+                            st.error(f"{label} error: {error_trace}")
                 
                 status.update(label="Comparison complete!", state="complete")
             
@@ -544,7 +513,10 @@ with tab_vergleich:
                     if label == "DSPy" and not DSPY_READY:
                         st.warning("DSPy not installed. Install `dspy-ai` and `litellm` for full functionality.")
                     if errors.get(label):
-                        st.error(f"Error: {errors[label]}")
+                        st.error(f"**Error in {label}:** {errors[label]}")
+                        if show_debug:
+                            import traceback
+                            st.code(traceback.format_exc(), language="python")
 
                     execution_trace = res.get("execution_trace", []) or []
                     if execution_trace:
@@ -667,3 +639,96 @@ with tab_teleprompt:
                                 st.text(res.get("structured", ""))
                             with st.expander("Critic"):
                                 st.text(res.get("critic", ""))
+
+# CSV Telemetry - always visible at bottom
+st.markdown("---")
+with st.expander("CSV Telemetry Data", expanded=False):
+    telemetry_path = "telemetry.csv"
+    if not os.path.exists(telemetry_path):
+        st.info("No telemetry data yet. Run a pipeline to start logging metrics.")
+    else:
+        try:
+            telemetry_df = pd.read_csv(telemetry_path)
+            if len(telemetry_df) > 0:
+                st.markdown(f"**Total runs:** {len(telemetry_df)}")
+                
+                # Show last 10 entries
+                last_entries = telemetry_df.tail(10).copy()
+                
+                # Prepare columns for display
+                display_cols = []
+                if "timestamp" in last_entries.columns:
+                    display_cols.append("timestamp")
+                if "engine" in last_entries.columns:
+                    display_cols.append("engine")
+                if "model" in last_entries.columns:
+                    display_cols.append("model")
+                if "latency_s" in last_entries.columns:
+                    display_cols.append("latency_s")
+                if "summary_len" in last_entries.columns:
+                    display_cols.append("summary_len")
+                if "extracted_metrics_count" in last_entries.columns:
+                    display_cols.append("extracted_metrics_count")
+                if "critic_loops" in last_entries.columns:
+                    display_cols.append("critic_loops")
+                if "critic_score" in last_entries.columns:
+                    display_cols.append("critic_score")
+                
+                if display_cols:
+                    # Format the data for better display
+                    display_df = last_entries[display_cols].copy()
+                    if "timestamp" in display_df.columns:
+                        # Format timestamp to show only date and time (remove microseconds)
+                        try:
+                            display_df["timestamp"] = pd.to_datetime(display_df["timestamp"], errors="coerce").dt.strftime("%Y-%m-%d %H:%M:%S")
+                        except Exception:
+                            pass
+                    if "latency_s" in display_df.columns:
+                        display_df["latency_s"] = pd.to_numeric(display_df["latency_s"], errors="coerce").round(2)
+                    if "summary_len" in display_df.columns:
+                        display_df["summary_len"] = pd.to_numeric(display_df["summary_len"], errors="coerce").fillna(0).astype(int)
+                    if "extracted_metrics_count" in display_df.columns:
+                        display_df["extracted_metrics_count"] = pd.to_numeric(display_df["extracted_metrics_count"], errors="coerce").fillna(0).astype(int)
+                    if "critic_score" in display_df.columns:
+                        display_df["critic_score"] = pd.to_numeric(display_df["critic_score"], errors="coerce").round(2)
+                    if "critic_loops" in display_df.columns:
+                        display_df["critic_loops"] = pd.to_numeric(display_df["critic_loops"], errors="coerce").fillna(0).astype(int)
+                    
+                    st.dataframe(
+                        display_df,
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                    
+                    # Chart for latency over time
+                    if "latency_s" in telemetry_df.columns and "engine" in telemetry_df.columns:
+                        st.markdown("**Latency over time:**")
+                        plot_data = telemetry_df.tail(30).copy()
+                        plot_data = plot_data.reset_index()
+                        plot_data["run"] = plot_data.index + 1
+                        
+                        chart = (
+                            alt.Chart(plot_data)
+                            .mark_line(point=True, size=2)
+                            .encode(
+                                x=alt.X("run:Q", title="Run #"),
+                                y=alt.Y("latency_s:Q", title="Latency (seconds)"),
+                                color=alt.Color("engine:N", legend=alt.Legend(title="Pipeline")),
+                            )
+                            .properties(height=250)
+                        )
+                        st.altair_chart(chart, use_container_width=True)
+                
+                # Download button
+                csv_data = telemetry_df.to_csv(index=False)
+                st.download_button(
+                    "Download CSV",
+                    data=csv_data,
+                    file_name="telemetry.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+            else:
+                st.info("No telemetry data yet. Run a pipeline to start logging metrics.")
+        except Exception as e:
+            st.error(f"Could not load telemetry: {e}")

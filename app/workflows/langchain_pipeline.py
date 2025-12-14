@@ -4,6 +4,7 @@ LangChain Pipeline: Sequential execution.
 
 from typing import Optional, Dict, Any
 from time import perf_counter
+from datetime import datetime
 
 from agents.reader import run as run_reader
 from agents.summarizer import run as run_summarizer
@@ -73,16 +74,21 @@ def run_pipeline(input_text: str, config: Optional[Dict[str, Any]] = None) -> Di
         "integrator_s": integrator_duration,
     }
     
-    log_row({
-        "engine": "langchain",
-        "input_chars": input_chars,
-        "summary_len": len(str(summary)),
-        "meta_len": len(str(meta_summary)),
-        "latency_s": total_duration,
-        **timing_statistics,
-        "extracted_metrics_count": metrics_count,
-        "confidence": confidence_line,
-    })
+    if config_dict.get("csv_telemetry", True):
+        log_row({
+            "engine": "langchain",
+            "model": config_dict.get("model", ""),
+            "max_tokens": config_dict.get("max_tokens", 0),
+            "temperature": config_dict.get("temperature", 0.0),
+            "timestamp": datetime.now().isoformat(),
+            "input_chars": input_chars,
+            "summary_len": len(str(summary)),
+            "meta_len": len(str(meta_summary)),
+            "latency_s": total_duration,
+            **timing_statistics,
+            "extracted_metrics_count": metrics_count,
+            "confidence": confidence_line,
+        })
     
     return {
         "structured": structured_notes,
