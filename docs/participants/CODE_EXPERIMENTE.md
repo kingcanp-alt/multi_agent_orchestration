@@ -314,7 +314,7 @@ summary = self.summarizer(NOTES=notes, target_length="short").SUMMARY
 **Warum:** Ihr seht, wie die Pipeline mit ungültigen Eingaben umgeht. Wichtig für robuste Anwendungen.
 
 **So geht's:**
-1. In der UI: Leeres Textfeld oder sehr kurzer Text (< 100 Zeichen) hochladen
+1. In der UI: Leeres Textfeld oder sehr kurzen Text (< 100 Zeichen) hochladen
 2. Pipeline starten
 3. Beobachtet die Fehlerbehandlung (Zeile 40-43)
 

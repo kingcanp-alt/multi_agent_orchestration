@@ -1,4 +1,4 @@
-# START HIER - Workshop Teilnehmer
+# START HIER
 
 ## Übersicht
 
@@ -8,7 +8,7 @@ Ihr seid in `docs/participants/`. Für den Start müsst ihr ins Projekt Root.
 
 ---
 
-## Was passiert beim Doppelklick?
+## Was passiert?
 
 1. Python wird geprüft.
 2. Ein virtuelles Environment wird angelegt (falls nötig).
@@ -67,13 +67,13 @@ API Keys bekommt ihr vom Workshop Team oder auf https://platform.openai.com/api-
 
 ## Was ihr danach machen könnt
 
-1. Die App öffnen und Pipelines (LangChain, LangGraph, DSPy) ausprobieren.
-2. Die Aufgaben im Workshop Skript (`TEILNEHMER_SKRIPT.md`) bearbeiten.
-3. Die Code Beispiele (`CODE_EXPERIMENTE.md`) nutzen.
+1. App öffnen und Pipelines (LangChain, LangGraph, DSPy) ausprobieren.
+2. Aufgaben im Workshop Skript (`TEILNEHMER_SKRIPT.md`) bearbeiten.
+3. Code Beispiele (`CODE_EXPERIMENTE.md`) nutzen.
 
 ---
 
-## Alternativ: Manueller Start
+## Alternativ
 
 1. Terminal im Projekt Root öffnen (nicht in `docs/participants/`).
 2. Virtual Environment:
@@ -86,5 +86,3 @@ API Keys bekommt ihr vom Workshop Team oder auf https://platform.openai.com/api-
    ```bash
    python -m streamlit run app/app.py
    ```
-
-Der Doppelklick Start bleibt der schnellste Weg.

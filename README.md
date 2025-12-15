@@ -1,14 +1,14 @@
 # Multi-Agent Paper Analyzer
 
-Dieses Projekt vergleicht drei Wege, denselben LLM-Workflow zu steuern:
+Wir vergleichem drei Wege, denselben LLM-Workflow zu steuern:
 - LangChain (linear)
 - LangGraph (Graph mit einer einfachen Entscheidung)
 - DSPy (deklarativ, optional mit Teleprompting)
 
-Der Ablauf ist immer gleich:
+Ablauf ist immer gleich:
 Reader → Summarizer → Critic → Integrator
 
-Wir wollen sehen, was sich ändert, wenn nur das Orchestrierungs-Framework wechselt.
+Wir wollen sehen, was sich ändert, wenn nur das Orchestrierungs-Framework geändert wird.
 
 ---
 
@@ -43,7 +43,7 @@ python -m streamlit run app/app.py
 2. Pipeline wählen (LangChain, LangGraph, DSPy)
 3. Start drücken
 
-Die App liefert vier Artefakte:
+App liefert vier Artefakte:
 - **Notes** (Reader)
 - **Summary** (Summarizer)
 - **Review** (Critic: Scores + Hinweise)
@@ -51,7 +51,7 @@ Die App liefert vier Artefakte:
 
 ---
 
-## Die drei Pipelines
+## Drei Pipelines
 
 ### LangChain
 
@@ -69,7 +69,7 @@ flowchart LR
 ### LangGraph
 
 LangGraph nutzt einen Graphen.
-Der Critic kann einen zweiten Versuch auslösen. Wir erlauben maximal eine Schleife.
+Critic kann einen zweiten Versuch auslösen. Wir erlauben maximal eine Schleife.
 
 ```mermaid
 flowchart LR
@@ -95,7 +95,7 @@ Mit Teleprompting sieht man den Unterschied im Ergebnis und in der Laufzeit.
 
 ## Was wir messen
 
-Wir halten die Metriken bewusst schlank. Das reicht für den Vergleich.
+Metriken bewusst schlank. Das reicht für den Vergleich.
 
 ### Laufzeit
 - Gesamtzeit
@@ -120,9 +120,9 @@ Wir halten die Metriken bewusst schlank. Das reicht für den Vergleich.
 - `app/app.py` – Streamlit UI
 - `app/agents/` – Reader, Summarizer, Critic, Integrator
 - `app/workflows/` – LangChain, LangGraph, DSPy
-- `app/llm.py` – Modell-Setup
-- `app/telemetry.py` – einfache Logs (Timing, Scores)
-- `app/utils.py` – Textvorverarbeitung (PDF-Cleanup)
+- `app/llm.py` – Setup vom LLM
+- `app/telemetry.py` – Logs (Timing, Scores)
+- `app/utils.py` – Vorverarbeitung (PDF-Cleanup)
 - `dev-set/` – Beispiele für DSPy Teleprompting
 
 **Dokumente für den Workshop:**
@@ -136,10 +136,3 @@ Wir halten die Metriken bewusst schlank. Das reicht für den Vergleich.
 
 **Startpunkt:**
 - `docs/participants/START_HIER.md`
-
-**Ablauf (60 Minuten):**
-1. Rollen der vier Agenten verstehen
-2. LangChain: linearer Ablauf
-3. LangGraph: Entscheidung + ein Loop
-4. DSPy: Signaturen und Teleprompting
-5. Vergleich: Laufzeit, Scores, Trade-offs
