@@ -1,7 +1,3 @@
-"""
-LLM config (gpt-4o-mini, gpt-4o....).
-"""
-
 from __future__ import annotations
 
 import os

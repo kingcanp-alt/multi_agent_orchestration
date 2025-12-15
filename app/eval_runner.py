@@ -1,7 +1,3 @@
-"""
-Evaluation runner for comparing all pipelines.
-"""
-
 from __future__ import annotations
 
 import json, re, os, sys
